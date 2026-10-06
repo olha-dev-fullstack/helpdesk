@@ -18,3 +18,8 @@ export const serverEnv = {
   SEED_ADMIN_EMAIL: ADMIN_EMAIL,
   SEED_ADMIN_PASSWORD: ADMIN_PASSWORD,
 };
+
+export const AGENT_EMAIL = "agent@e2e.test";
+export const AGENT_PASSWORD = "e2e-agent-password";
+export const AGENT_NAME = "E2E Agent";
+export const ADMIN_NAME = "Admin";

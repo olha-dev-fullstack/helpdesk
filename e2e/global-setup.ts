@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import path from "node:path";
-import { serverEnv } from "./env";
+import { AGENT_EMAIL, AGENT_NAME, AGENT_PASSWORD, serverEnv } from "./env";
 
 const serverDir = path.resolve(import.meta.dirname, "../server");
 
@@ -19,4 +19,15 @@ export default function globalSetup() {
   }
   run(["--bun", "prisma", "migrate", "deploy"]);
   run(["prisma/seed.ts"]);
+  execFileSync("bun", [path.resolve(import.meta.dirname, "seed-agent.ts")], {
+    cwd: serverDir,
+    stdio: "inherit",
+    env: {
+      ...process.env,
+      ...serverEnv,
+      E2E_AGENT_EMAIL: AGENT_EMAIL,
+      E2E_AGENT_PASSWORD: AGENT_PASSWORD,
+      E2E_AGENT_NAME: AGENT_NAME,
+    },
+  });
 }
