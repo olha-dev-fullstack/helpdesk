@@ -5,6 +5,8 @@ import { Role } from "../src/generated/prisma/client";
 import { hashPassword } from "better-auth/crypto";
 import crypto from "crypto";
 
+const MIN_PASSWORD_LENGTH = 12; // keep in sync with src/lib/auth.ts
+
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
@@ -22,6 +24,12 @@ async function main() {
   if (existing) {
     console.log(`Admin user ${email} already exists — skipping.`);
     return;
+  }
+
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    throw new Error(
+      `SEED_ADMIN_PASSWORD must be at least ${MIN_PASSWORD_LENGTH} characters`
+    );
   }
 
   const hashedPassword = await hashPassword(password);

@@ -1,17 +1,25 @@
-import express from "express";
+import express, { type ErrorRequestHandler } from "express";
 import cors from "cors";
+import helmet from "helmet";
 import { toNodeHandler } from "better-auth/node";
-import { auth } from "./lib/auth";
+import { auth, trustedOrigins } from "./lib/auth";
 import { prisma } from "./lib/prisma";
+import { requireAdmin } from "./middlewares/require-admin";
+import { requireAuth } from "./middlewares/require-auth";
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.use(cors());
+app.use(helmet());
+app.use(cors({ origin: trustedOrigins, credentials: true }));
 // Better Auth must be mounted before express.json()
 app.all("/api/auth/*splat", toNodeHandler(auth));
 
 app.use(express.json());
+
+app.get("/api/me", requireAuth, (req, res) => {
+  res.json({ user: req.user, session: req.session });
+});
 
 app.get("/api/health", async (_req, res) => {
   try {
@@ -22,6 +30,18 @@ app.get("/api/health", async (_req, res) => {
     res.status(503).json({ status: "error", database: "unreachable" });
   }
 });
+
+// Everything below requires a session; register public routes above this line
+app.use("/api", requireAuth);
+// Admin-only routes: mount their routers after this guard
+app.use("/api/users", requireAdmin);
+
+// Generic handler so errors never leak stack traces to clients
+const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
+  console.error(err);
+  res.status(500).json({ error: "Internal server error" });
+};
+app.use(errorHandler);
 
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);

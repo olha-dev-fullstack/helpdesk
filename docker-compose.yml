@@ -17,5 +17,23 @@ services:
       timeout: 5s
       retries: 5
 
+  # Throwaway database for Playwright e2e tests (in-memory, separate from dev data)
+  db-test:
+    image: postgres:17-alpine
+    container_name: helpdesk-db-test
+    environment:
+      POSTGRES_USER: helpdesk_test
+      POSTGRES_PASSWORD: helpdesk_test
+      POSTGRES_DB: helpdesk_test
+    ports:
+      - "5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U helpdesk_test -d helpdesk_test"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
 volumes:
   postgres_data:
