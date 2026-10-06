@@ -1,20 +1,18 @@
-import { useEffect, useState } from "react";
+import { BrowserRouter, Route, Routes } from "react-router";
+import ProtectedRoute from "./components/ProtectedRoute";
+import HomePage from "./pages/HomePage";
+import LoginPage from "./pages/LoginPage";
 
 function App() {
-  const [status, setStatus] = useState("Loading...");
-
-  useEffect(() => {
-    fetch("/api/health")
-      .then((res) => res.json())
-      .then((data) => setStatus(data.status))
-      .catch(() => setStatus("Error connecting to server"));
-  }, []);
-
   return (
-    <div>
-      <h1>Helpdesk</h1>
-      <p>Server status: {status}</p>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route element={<ProtectedRoute />}>
+          <Route path="/" element={<HomePage />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 }
 

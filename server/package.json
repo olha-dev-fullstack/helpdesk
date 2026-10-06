@@ -7,6 +7,7 @@
     "dev": "bun --watch src/index.ts",
     "db:generate": "bun --bun prisma generate",
     "db:migrate": "bun --bun prisma migrate dev",
+    "db:seed": "bun prisma/seed.ts",
     "db:studio": "bun --bun prisma studio"
   },
   "devDependencies": {
@@ -21,6 +22,7 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
+    "better-auth": "^1.7.7",
     "cors": "^2.8.6",
     "dotenv": "^18.0.5",
     "express": "^5.2.1"
