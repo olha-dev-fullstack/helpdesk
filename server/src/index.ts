@@ -6,6 +6,8 @@ import { auth, trustedOrigins } from "./lib/auth";
 import { prisma } from "./lib/prisma";
 import { requireAdmin } from "./middlewares/require-admin";
 import { requireAuth } from "./middlewares/require-auth";
+import { inboundEmailRouter } from "./routes/inbound-email";
+import { ticketsRouter } from "./routes/tickets";
 import { usersRouter } from "./routes/users";
 
 const app = express();
@@ -16,7 +18,8 @@ app.use(cors({ origin: trustedOrigins, credentials: true }));
 // Better Auth must be mounted before express.json()
 app.all("/api/auth/*splat", toNodeHandler(auth));
 
-app.use(express.json());
+// Small cap: the largest legitimate payload is an inbound email body (<= 100k chars)
+app.use(express.json({ limit: "256kb" }));
 
 app.get("/api/me", requireAuth, (req, res) => {
   res.json({ user: req.user, session: req.session });
@@ -32,11 +35,15 @@ app.get("/api/health", async (_req, res) => {
   }
 });
 
+// Public, authenticated by shared secret instead of a session
+app.use("/api/webhooks/inbound-email", inboundEmailRouter);
+
 // Everything below requires a session; register public routes above this line
 app.use("/api", requireAuth);
 // Admin-only routes: mount their routers after this guard
 app.use("/api/users", requireAdmin);
 app.use("/api/users", usersRouter);
+app.use("/api/tickets", ticketsRouter);
 
 // Generic handler so errors never leak stack traces to clients
 const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {

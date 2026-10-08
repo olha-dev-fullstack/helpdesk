@@ -2,6 +2,11 @@ import { Link, NavLink, useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import { authClient, useSession } from "@/lib/auth-client";
 
+const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+  `text-sm font-medium transition-colors hover:text-foreground ${
+    isActive ? "text-foreground" : "text-muted-foreground"
+  }`;
+
 export default function NavBar() {
   const navigate = useNavigate();
   const { data: session } = useSession();
@@ -18,14 +23,13 @@ export default function NavBar() {
         <Link to="/" className="text-lg font-semibold">
           Helpdesk
         </Link>
+        <NavLink to="/tickets" className={navLinkClass}>
+          Tickets
+        </NavLink>
         {session?.user.role === "admin" && (
           <NavLink
             to="/users"
-            className={({ isActive }) =>
-              `text-sm font-medium transition-colors hover:text-foreground ${
-                isActive ? "text-foreground" : "text-muted-foreground"
-              }`
-            }
+            className={navLinkClass}
           >
             Users
           </NavLink>

@@ -56,6 +56,7 @@ The client proxies `/api/*` requests to the server via Vite config.
 - Routing (`client/src/App.tsx`): `ProtectedRoute` (requires session, renders NavBar) wraps `AdminRoute` (requires `role === "admin"`, else redirects to `/`); admin-only pages (e.g. `/users`) go inside `AdminRoute`
 - Client-side guards are UX only; admin API endpoints must also check the role on the server
 - Server guards (`server/src/index.ts`): public routes (`/api/auth/*`, `/api/health`) are registered first, then `app.use("/api", requireAuth)`; admin routers mount after `app.use("/api/users", requireAdmin)`. New public routes must go above the `requireAuth` line
+- Server validation uses zod: define a schema per route and call `parseOrReject` (`server/src/lib/validation.ts`), which sends a 400 with the first issue message
 - Express 5: async route handlers need no try/catch; rejections reach the generic error handler
 - Server hardening: `helmet`, CORS limited to `TRUSTED_ORIGINS` (comma-separated, shared via `trustedOrigins` in `auth.ts`), generic 500 error handler, secure cookies in production
 - `auth.ts` throws at startup if `BETTER_AUTH_SECRET` is under 32 chars; passwords must be 12+ chars (`MIN_PASSWORD_LENGTH`, duplicated in `prisma/seed.ts`)

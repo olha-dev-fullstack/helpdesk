@@ -15,6 +15,7 @@ export const serverEnv = {
   BETTER_AUTH_URL: `http://localhost:${SERVER_PORT}`,
   TRUSTED_ORIGINS: BASE_URL,
   RATE_LIMIT_ENABLED: "false",
+  INBOUND_EMAIL_SECRET: "e2e-only-inbound-secret-0123456789abcdef",
   SEED_ADMIN_EMAIL: ADMIN_EMAIL,
   SEED_ADMIN_PASSWORD: ADMIN_PASSWORD,
 };

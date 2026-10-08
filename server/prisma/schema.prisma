@@ -27,6 +27,7 @@ model User {
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
+  tickets       Ticket[]
 
   role          Role      @default(agent)
 
@@ -80,4 +81,37 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+enum TicketStatus {
+  open
+  resolved
+  closed
+}
+
+enum TicketCategory {
+  general_question
+  technical_question
+  refund_request
+}
+
+model Ticket {
+  id           String          @id @default(cuid())
+  subject      String
+  body         String
+  fromEmail    String
+  fromName     String?
+  status       TicketStatus    @default(open)
+  category     TicketCategory?
+  messageId    String?
+  assignedToId String?
+  assignedTo   User?           @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@unique([messageId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([assignedToId])
+  @@map("ticket")
 }

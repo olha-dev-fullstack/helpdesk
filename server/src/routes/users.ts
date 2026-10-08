@@ -2,13 +2,15 @@ import { Router } from "express";
 import { Prisma } from "../generated/prisma/client";
 import { hashPassword } from "better-auth/crypto";
 import crypto from "crypto";
+import { z } from "zod";
 import { MIN_PASSWORD_LENGTH } from "../lib/auth";
 import { prisma } from "../lib/prisma";
+import { isPrismaError } from "../lib/prisma-errors";
+import { parseOrReject } from "../lib/validation";
 
 export const usersRouter = Router();
 
 const MIN_NAME_LENGTH = 3;
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const userSelect = {
   id: true,
   name: true,
@@ -25,50 +27,40 @@ usersRouter.get("/", async (_req, res) => {
   res.json({ users });
 });
 
-function isPrismaError(err: unknown, code: string) {
-  return err instanceof Prisma.PrismaClientKnownRequestError && err.code === code;
-}
-
 const EMAIL_TAKEN = "A user with this email already exists";
 
-function validateName(name: string) {
-  return name.trim().length >= MIN_NAME_LENGTH
-    ? null
-    : `Name must be at least ${MIN_NAME_LENGTH} characters`;
-}
+const nameSchema = z
+  .string()
+  .trim()
+  .min(MIN_NAME_LENGTH, `Name must be at least ${MIN_NAME_LENGTH} characters`);
+const emailSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .pipe(z.email("Enter a valid email address"));
+const passwordSchema = z
+  .string()
+  .min(MIN_PASSWORD_LENGTH, `Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
 
-function validateEmail(email: string) {
-  return EMAIL_PATTERN.test(email.trim().toLowerCase())
-    ? null
-    : "Enter a valid email address";
-}
+const createUserSchema = z.object(
+  { name: nameSchema, email: emailSchema, password: passwordSchema },
+  "name, email and password are required",
+);
 
-function validatePassword(password: string) {
-  return password.length >= MIN_PASSWORD_LENGTH
-    ? null
-    : `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;
-}
+// An omitted/empty password leaves it unchanged
+const updateUserSchema = z.object(
+  {
+    name: nameSchema,
+    email: emailSchema,
+    password: z.union([z.literal(""), passwordSchema]).optional(),
+  },
+  "name and email are required",
+);
 
 usersRouter.post("/", async (req, res) => {
-  const { name, email, password } = req.body ?? {};
-
-  if (
-    typeof name !== "string" ||
-    typeof email !== "string" ||
-    typeof password !== "string"
-  ) {
-    res.status(400).json({ error: "name, email and password are required" });
-    return;
-  }
-
-  const error = validateName(name) ?? validateEmail(email) ?? validatePassword(password);
-  if (error) {
-    res.status(400).json({ error });
-    return;
-  }
-
-  const trimmedName = name.trim();
-  const normalizedEmail = email.trim().toLowerCase();
+  const input = parseOrReject(createUserSchema, req.body, res);
+  if (!input) return;
+  const { name: trimmedName, email: normalizedEmail, password } = input;
 
   const existing = await prisma.user.findUnique({
     where: { email: normalizedEmail },
@@ -126,26 +118,9 @@ usersRouter.post("/", async (req, res) => {
 // Name and email are required; an omitted/empty password leaves it unchanged
 usersRouter.patch("/:id", async (req, res) => {
   const id = String(req.params.id);
-  const { name, email, password } = req.body ?? {};
-
-  if (typeof name !== "string" || typeof email !== "string") {
-    res.status(400).json({ error: "name and email are required" });
-    return;
-  }
-  if (password !== undefined && typeof password !== "string") {
-    res.status(400).json({ error: "password must be a string" });
-    return;
-  }
-
-  const changePassword = typeof password === "string" && password !== "";
-  const error =
-    validateName(name) ??
-    validateEmail(email) ??
-    (changePassword ? validatePassword(password) : null);
-  if (error) {
-    res.status(400).json({ error });
-    return;
-  }
+  const input = parseOrReject(updateUserSchema, req.body, res);
+  if (!input) return;
+  const { name, email: normalizedEmail, password } = input;
 
   const target = await prisma.user.findUnique({
     where: { id },
@@ -156,7 +131,6 @@ usersRouter.patch("/:id", async (req, res) => {
     return;
   }
 
-  const normalizedEmail = email.trim().toLowerCase();
   const taken = await prisma.user.findFirst({
     where: { email: normalizedEmail, NOT: { id } },
     select: { id: true },
@@ -166,7 +140,7 @@ usersRouter.patch("/:id", async (req, res) => {
     return;
   }
 
-  const hashedPassword = changePassword ? await hashPassword(password) : null;
+  const hashedPassword = password ? await hashPassword(password) : null;
 
   const user = await prisma
     .$transaction(async (tx) => {
@@ -180,7 +154,7 @@ usersRouter.patch("/:id", async (req, res) => {
       }
       return tx.user.update({
         where: { id },
-        data: { name: name.trim(), email: normalizedEmail, updatedAt: new Date() },
+        data: { name, email: normalizedEmail, updatedAt: new Date() },
         select: userSelect,
       });
     })
