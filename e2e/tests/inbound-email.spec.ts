@@ -75,11 +75,12 @@ test.describe("tickets", () => {
     await loginViaApi(page, admin);
     await page.goto("/tickets");
     await expect(page.getByRole("heading", { name: "Tickets", level: 1 })).toBeVisible();
-    for (const name of ["Subject", "From", "Status", "Received"]) {
+    for (const name of ["Subject", "Sender", "Category", "Status", "Created"]) {
       await expect(page.getByRole("columnheader", { name })).toBeVisible();
     }
     const row = page.getByRole("row").filter({ hasText: data.subject });
     await expect(row).toHaveCount(1);
+    await expect(row).toContainText(data.fromName);
     await expect(row).toContainText(data.from);
     await expect(row).toContainText("open");
   });

@@ -68,6 +68,9 @@ The client proxies `/api/*` requests to the server via Vite config.
 - Import with the `@/` alias (maps to `client/src`)
 - Use shadcn components from `@/components/ui` and Tailwind utilities; no custom CSS beyond `src/index.css` (Tailwind + shadcn theme variables)
 - Add components with `bunx --bun shadcn@latest add <name>`
+- Feature folders: `client/src/features/<feature>/{components,hooks,types.ts,constants.ts,api.ts}`; `pages/` are thin route entries that compose a feature's hook and components (see `features/tickets`, `features/users`)
+- One component per file; data fetching, mutations and state logic live in custom hooks (`hooks/useXxx.ts`), not in components; shared types/enums go in `types.ts`, constants (query keys, option lists, labels) in `constants.ts`; cross-feature helpers go in `src/hooks` and `src/lib`
+- Review any component over 300 lines and split it (hook + sub-components)
 - Data fetching: use axios for HTTP requests and TanStack Query (`@tanstack/react-query`) for server state (`useQuery`/`useMutation`); no raw `fetch` + `useEffect`. `QueryClientProvider` is set up in `client/src/main.tsx`
 - Use `Skeleton` (`@/components/ui/skeleton`) for loading states, not "Loading..." text
 - Admin user list: `GET /api/users` (`server/src/routes/users.ts`) feeds `client/src/pages/UsersPage.tsx`; `POST /api/users` (admin-only, always creates role `agent`, writes user + credential account via Prisma like the seed since `disableSignUp` blocks Better Auth sign-up) feeds `UserFormDialog` (create + edit); `PATCH /api/users/:id` (blank password = unchanged; a password change deletes that user's sessions) and `DELETE /api/users/:id` (rejects deleting yourself; sessions/accounts cascade) feed the row actions and `DeleteUserDialog`

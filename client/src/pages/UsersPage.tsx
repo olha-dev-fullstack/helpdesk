@@ -1,31 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
 import { useState } from "react";
-import { DeleteUserDialog } from "@/components/DeleteUserDialog";
-import { UserFormDialog, type User } from "@/components/UserFormDialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-
-async function fetchUsers(): Promise<User[]> {
-  const { data } = await axios.get<{ users: User[] }>("/api/users");
-  return data.users;
-}
+import { DeleteUserDialog } from "@/features/users/components/DeleteUserDialog";
+import { UserFormDialog } from "@/features/users/components/UserFormDialog";
+import { UsersTable } from "@/features/users/components/UsersTable";
+import { UsersTableSkeleton } from "@/features/users/components/UsersTableSkeleton";
+import { useUsers } from "@/features/users/hooks/useUsers";
+import type { User } from "@/features/users/types";
 
 export default function UsersPage() {
-  const {
-    data: users,
-    isPending,
-    isError,
-  } = useQuery({ queryKey: ["users"], queryFn: fetchUsers });
+  const { data: users, isPending, isError } = useUsers();
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
   const [deleting, setDeleting] = useState<User | null>(null);
@@ -52,61 +35,11 @@ export default function UsersPage() {
           Failed to load users
         </p>
       ) : isPending ? (
-        <div className="space-y-2" aria-label="Loading users">
-          {[0, 1, 2].map((i) => (
-            <Skeleton key={i} className="h-10 w-full" />
-          ))}
-        </div>
+        <UsersTableSkeleton />
       ) : users.length === 0 ? (
         <p className="text-muted-foreground">No users found.</p>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead>
-                <span className="sr-only">Actions</span>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.name}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>
-                  <Badge variant={user.role === "admin" ? "default" : "secondary"}>
-                    {user.role}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {new Date(user.createdAt).toLocaleDateString()}
-                </TableCell>
-                <TableCell className="space-x-2 text-right">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    aria-label={`Edit ${user.name}`}
-                    onClick={() => setEditing(user)}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    aria-label={`Delete ${user.name}`}
-                    onClick={() => setDeleting(user)}
-                  >
-                    Delete
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <UsersTable users={users} onEdit={setEditing} onDelete={setDeleting} />
       )}
     </div>
   );
