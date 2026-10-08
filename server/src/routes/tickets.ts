@@ -94,3 +94,22 @@ ticketsRouter.get("/", async (req, res) => {
     totalPages: Math.max(1, Math.ceil(total / query.pageSize)),
   });
 });
+
+const ticketDetailSelect = {
+  ...ticketSelect,
+  body: true,
+  updatedAt: true,
+  assignedTo: { select: { id: true, name: true } },
+} as const;
+
+ticketsRouter.get("/:id", async (req, res) => {
+  const ticket = await prisma.ticket.findUnique({
+    where: { id: String(req.params.id) },
+    select: ticketDetailSelect,
+  });
+  if (!ticket) {
+    res.status(404).json({ error: "Ticket not found" });
+    return;
+  }
+  res.json({ ticket });
+});

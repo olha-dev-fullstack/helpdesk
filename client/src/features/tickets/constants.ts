@@ -10,6 +10,9 @@ import type {
 export const ALL = "all";
 
 export const TICKETS_QUERY_KEY = "tickets";
+export const TICKETS_PATH = "/tickets";
+export const ticketPath = (id: string) => `${TICKETS_PATH}/${id}`;
+
 export const PAGE_SIZE = 20;
 export const SEARCH_DEBOUNCE_MS = 300;
 

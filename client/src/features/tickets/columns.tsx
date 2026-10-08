@@ -4,9 +4,10 @@ import {
   rowSortingFeature,
   tableFeatures,
 } from "@tanstack/react-table";
+import { Link } from "react-router";
 import { SenderCell } from "./components/SenderCell";
 import { TicketStatusBadge } from "./components/TicketStatusBadge";
-import { categoryLabel } from "./constants";
+import { categoryLabel, ticketPath } from "./constants";
 import type { Ticket } from "./types";
 
 export const ticketTableFeatures = tableFeatures({
@@ -21,7 +22,14 @@ export const ticketColumns = columnHelper.columns([
   columnHelper.accessor("subject", {
     id: "subject",
     header: "Subject",
-    cell: (info) => <span className="font-medium">{info.getValue()}</span>,
+    cell: ({ row }) => (
+      <Link
+        to={ticketPath(row.original.id)}
+        className="font-medium underline-offset-4 hover:underline"
+      >
+        {row.original.subject}
+      </Link>
+    ),
   }),
   columnHelper.accessor((t) => t.fromName ?? t.fromEmail, {
     id: "sender",

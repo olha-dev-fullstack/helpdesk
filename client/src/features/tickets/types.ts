@@ -16,6 +16,12 @@ export interface Ticket {
   createdAt: string;
 }
 
+export interface TicketDetails extends Ticket {
+  body: string;
+  updatedAt: string;
+  assignedTo: { id: string; name: string } | null;
+}
+
 export interface TicketsResponse {
   tickets: Ticket[];
   total: number;

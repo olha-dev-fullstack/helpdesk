@@ -1,7 +1,7 @@
 import type { PaginationState, SortingState } from "@tanstack/react-table";
 import axios from "axios";
 import { ALL } from "./constants";
-import type { TicketFilters, TicketsResponse } from "./types";
+import type { TicketDetails, TicketFilters, TicketsResponse } from "./types";
 
 export interface TicketsQuery {
   sorting: SortingState;
@@ -26,4 +26,9 @@ export async function fetchTickets({
     },
   });
   return data;
+}
+
+export async function fetchTicket(id: string): Promise<TicketDetails> {
+  const { data } = await axios.get<{ ticket: TicketDetails }>(`/api/tickets/${id}`);
+  return data.ticket;
 }
