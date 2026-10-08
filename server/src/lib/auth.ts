@@ -1,3 +1,4 @@
+import { MIN_PASSWORD_LENGTH } from "@core";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./prisma";
@@ -8,8 +9,6 @@ export const trustedOrigins = (
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
-
-export const MIN_PASSWORD_LENGTH = 12;
 
 const secret = process.env.BETTER_AUTH_SECRET;
 if (!secret || secret.length < 32) {

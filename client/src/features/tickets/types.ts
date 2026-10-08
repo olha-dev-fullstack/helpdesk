@@ -1,10 +1,8 @@
 import type { ALL } from "./constants";
 
-export type TicketStatus = "open" | "resolved" | "closed";
-export type TicketCategory =
-  | "general_question"
-  | "technical_question"
-  | "refund_request";
+import type { SenderType, TicketCategory, TicketStatus } from "@core";
+
+export type { SenderType, TicketCategory, TicketStatus, TicketUpdate } from "@core";
 
 export interface Ticket {
   id: string;
@@ -27,13 +25,6 @@ export interface TicketDetails extends Ticket {
   assignedTo: Assignee | null;
 }
 
-/** Fields that can be changed on a ticket; `null` clears the category or assignee. */
-export interface TicketUpdate {
-  status?: TicketStatus;
-  category?: TicketCategory | null;
-  assignedToId?: string | null;
-}
-
 export interface TicketsResponse {
   tickets: Ticket[];
   total: number;
@@ -51,8 +42,6 @@ export interface SelectOption<V extends string = string> {
   value: V;
   label: string;
 }
-
-export type SenderType = "agent" | "customer";
 
 export interface Reply {
   id: string;

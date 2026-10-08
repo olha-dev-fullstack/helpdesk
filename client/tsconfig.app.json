@@ -17,7 +17,7 @@
     "jsx": "react-jsx",
 
     "baseUrl": ".",
-    "paths": { "@/*": ["./src/*"] },
+    "paths": { "@/*": ["./src/*"], "@core": ["../core/src/index.ts"] },
 
     /* Linting */
     "strict": true,
@@ -27,5 +27,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"]
+  "include": ["src", "../core/src"]
 }

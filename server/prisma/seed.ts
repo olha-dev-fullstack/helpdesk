@@ -1,11 +1,10 @@
 import "dotenv/config";
+import { MIN_PASSWORD_LENGTH } from "@core";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { Role } from "../src/generated/prisma/client";
 import { hashPassword } from "better-auth/crypto";
 import crypto from "crypto";
-
-const MIN_PASSWORD_LENGTH = 12; // keep in sync with src/lib/auth.ts
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });

@@ -1,13 +1,11 @@
 import { Router } from "express";
-import { z } from "zod";
+import { replySchema } from "@core";
 import { prisma } from "../lib/prisma";
 import { isPrismaError } from "../lib/prisma-errors";
 import { parseOrReject } from "../lib/validation";
 
 // Mounted at /api/tickets/:id/replies; mergeParams exposes the ticket id
 export const repliesRouter = Router({ mergeParams: true });
-
-const MAX_REPLY_LENGTH = 10_000;
 
 const replySelect = {
   id: true,
@@ -30,14 +28,6 @@ repliesRouter.get<{ id: string }>("/", async (req, res) => {
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
   });
   res.json({ replies });
-});
-
-const replySchema = z.object({
-  body: z
-    .string("Reply is required")
-    .trim()
-    .min(1, "Reply is required")
-    .max(MAX_REPLY_LENGTH, `Reply must be at most ${MAX_REPLY_LENGTH} characters`),
 });
 
 repliesRouter.post<{ id: string }>("/", async (req, res) => {

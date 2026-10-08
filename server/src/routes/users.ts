@@ -2,15 +2,13 @@ import { Router } from "express";
 import { Prisma } from "../generated/prisma/client";
 import { hashPassword } from "better-auth/crypto";
 import crypto from "crypto";
-import { z } from "zod";
-import { MIN_PASSWORD_LENGTH } from "../lib/auth";
+import { createUserSchema, editUserSchema } from "@core";
 import { prisma } from "../lib/prisma";
 import { isPrismaError } from "../lib/prisma-errors";
 import { parseOrReject } from "../lib/validation";
 
 export const usersRouter = Router();
 
-const MIN_NAME_LENGTH = 3;
 const userSelect = {
   id: true,
   name: true,
@@ -28,34 +26,6 @@ usersRouter.get("/", async (_req, res) => {
 });
 
 const EMAIL_TAKEN = "A user with this email already exists";
-
-const nameSchema = z
-  .string()
-  .trim()
-  .min(MIN_NAME_LENGTH, `Name must be at least ${MIN_NAME_LENGTH} characters`);
-const emailSchema = z
-  .string()
-  .trim()
-  .toLowerCase()
-  .pipe(z.email("Enter a valid email address"));
-const passwordSchema = z
-  .string()
-  .min(MIN_PASSWORD_LENGTH, `Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
-
-const createUserSchema = z.object(
-  { name: nameSchema, email: emailSchema, password: passwordSchema },
-  "name, email and password are required",
-);
-
-// An omitted/empty password leaves it unchanged
-const updateUserSchema = z.object(
-  {
-    name: nameSchema,
-    email: emailSchema,
-    password: z.union([z.literal(""), passwordSchema]).optional(),
-  },
-  "name and email are required",
-);
 
 usersRouter.post("/", async (req, res) => {
   const input = parseOrReject(createUserSchema, req.body, res);
@@ -118,7 +88,7 @@ usersRouter.post("/", async (req, res) => {
 // Name and email are required; an omitted/empty password leaves it unchanged
 usersRouter.patch("/:id", async (req, res) => {
   const id = String(req.params.id);
-  const input = parseOrReject(updateUserSchema, req.body, res);
+  const input = parseOrReject(editUserSchema, req.body, res);
   if (!input) return;
   const { name, email: normalizedEmail, password } = input;
 

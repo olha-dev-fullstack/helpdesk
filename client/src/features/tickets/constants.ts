@@ -1,3 +1,4 @@
+import { DEFAULT_PAGE_SIZE } from "@core";
 import type { SortingState } from "@tanstack/react-table";
 import type {
   SelectOption,
@@ -13,7 +14,6 @@ export const ALL = "all";
 
 export const TICKETS_QUERY_KEY = "tickets";
 export const REPLIES_QUERY_KEY = "ticket-replies";
-export const MAX_REPLY_LENGTH = 10_000;
 export const ASSIGNEES_QUERY_KEY = "ticket-assignees";
 
 /** Select value meaning "no assignee". */
@@ -21,7 +21,7 @@ export const UNASSIGNED = "unassigned";
 export const TICKETS_PATH = "/tickets";
 export const ticketPath = (id: string) => `${TICKETS_PATH}/${id}`;
 
-export const PAGE_SIZE = 20;
+export const PAGE_SIZE = DEFAULT_PAGE_SIZE;
 export const SEARCH_DEBOUNCE_MS = 300;
 
 export const NO_TICKETS: Ticket[] = [];

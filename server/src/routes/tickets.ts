@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { DEFAULT_PAGE_SIZE, TICKET_CATEGORIES, TICKET_STATUSES, ticketUpdateSchema } from "@core";
 import { z } from "zod";
 import { Prisma } from "../generated/prisma/client";
 import { prisma } from "../lib/prisma";
@@ -18,7 +19,6 @@ const ticketSelect = {
   createdAt: true,
 } as const;
 
-const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
 
 const SORT_FIELDS = ["subject", "sender", "category", "status", "createdAt"] as const;
@@ -28,9 +28,6 @@ const MAX_SEARCH_LENGTH = 200;
 
 // Prisma passes `contains` straight into LIKE, so escape the wildcards to match them literally
 const escapeLike = (text: string) => text.replace(/[\\%_]/g, "\\$&");
-
-const TICKET_STATUSES = ["open", "resolved", "closed"] as const;
-const TICKET_CATEGORIES = ["general_question", "technical_question", "refund_request"] as const;
 
 const listQuerySchema = z.object({
   status: z.enum(TICKET_STATUSES, "Invalid status").optional(),
@@ -129,24 +126,8 @@ ticketsRouter.get("/:id", async (req, res) => {
   res.json({ ticket });
 });
 
-// Any subset of these fields; `null` clears the category or the assignee
-const updateSchema = z
-  .object({
-    status: z.enum(TICKET_STATUSES, "Invalid status").optional(),
-    category: z.enum(TICKET_CATEGORIES, "Invalid category").nullable().optional(),
-    assignedToId: z
-      .string("Invalid assignedToId")
-      .min(1, "Invalid assignedToId")
-      .nullable()
-      .optional(),
-  })
-  .refine(
-    (v) => Object.values(v).some((x) => x !== undefined),
-    "Provide status, category or assignedToId",
-  );
-
 ticketsRouter.patch("/:id", async (req, res) => {
-  const input = parseOrReject(updateSchema, req.body, res);
+  const input = parseOrReject(ticketUpdateSchema, req.body, res);
   if (!input) return;
 
   const id = String(req.params.id);

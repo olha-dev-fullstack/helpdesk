@@ -1,4 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import DOMPurify from "dompurify";
+import { Card,CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { TicketDetails as TicketDetailsData } from "../types";
 import { AssigneeSelect } from "./AssigneeSelect";
 import { ReplyThread } from "./ReplyThread";
@@ -40,7 +41,10 @@ export function TicketDetails({ ticket }: { ticket: TicketDetailsData }) {
             <CardTitle>Message</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="whitespace-pre-wrap break-words">{ticket.body}</p>
+            <p
+              className="whitespace-pre-wrap break-words"
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ticket.body) }}
+            />
           </CardContent>
         </Card>
         <ReplyThread ticketId={ticket.id} />

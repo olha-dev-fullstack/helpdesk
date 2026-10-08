@@ -1,10 +1,10 @@
+import { replySchema } from "@core";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { getErrorMessage } from "@/lib/get-error-message";
 import { createReply } from "../api";
 import { REPLIES_QUERY_KEY } from "../constants";
-import { replySchema } from "../schemas";
 import type { ReplyFormValues } from "../types";
 
 /** Form state for posting a reply; clears the field and refreshes the thread on success. */

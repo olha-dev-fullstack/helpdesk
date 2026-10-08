@@ -9,6 +9,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@core': path.resolve(__dirname, '../core/src/index.ts'),
     },
   },
   test: {
@@ -18,6 +19,7 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    fs: { allow: ['..'] },
     proxy: {
       '/api': {
         target: process.env.API_PROXY_TARGET ?? 'http://localhost:3000',

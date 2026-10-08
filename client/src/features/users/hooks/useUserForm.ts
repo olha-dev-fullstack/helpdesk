@@ -1,7 +1,7 @@
+import { createUserSchema, editUserSchema } from "@core";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { getErrorMessage } from "@/lib/get-error-message";
-import { createUserSchema, editUserSchema } from "../schemas";
 import type { User, UserFormValues } from "../types";
 import { useSaveUser } from "./useSaveUser";
 

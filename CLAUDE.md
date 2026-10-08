@@ -19,6 +19,7 @@ A ticket management system that uses AI to classify, respond to, and route suppo
 ```
 /client   - React frontend (Vite)
 /server   - Express backend
+/core     - Code shared by both: zod schemas, enums/constants (source-only, imported as `@core`)
 ```
 
 ## Development
@@ -35,6 +36,12 @@ cd client && bun run dev
 ```
 
 The client proxies `/api/*` requests to the server via Vite config.
+
+## Shared code (core)
+
+- Anything used by both client and server (zod schemas, ticket/user enums, limits like `MIN_PASSWORD_LENGTH`) lives in `core/src` and is imported as `@core` (tsconfig `paths` in client and server, plus a Vite alias; Vite `server.fs.allow` includes the parent dir)
+- `core` has its own `package.json` (zod); run `bun install` in `core/` after cloning
+- Server-only schemas (ticket list query, inbound email) and client-only ones (login) stay in their own app
 
 ## Database (server)
 
@@ -59,7 +66,7 @@ The client proxies `/api/*` requests to the server via Vite config.
 - Server validation uses zod: define a schema per route and call `parseOrReject` (`server/src/lib/validation.ts`), which sends a 400 with the first issue message
 - Express 5: async route handlers need no try/catch; rejections reach the generic error handler
 - Server hardening: `helmet`, CORS limited to `TRUSTED_ORIGINS` (comma-separated, shared via `trustedOrigins` in `auth.ts`), generic 500 error handler, secure cookies in production
-- `auth.ts` throws at startup if `BETTER_AUTH_SECRET` is under 32 chars; passwords must be 12+ chars (`MIN_PASSWORD_LENGTH`, duplicated in `prisma/seed.ts`)
+- `auth.ts` throws at startup if `BETTER_AUTH_SECRET` is under 32 chars; passwords must be 12+ chars (`MIN_PASSWORD_LENGTH` from `@core`)
 - Rate limiting covers `/api/auth/*` only (Better Auth, in-memory, sign-in 5/min); disable with `RATE_LIMIT_ENABLED=false` (e2e does)
 - Security review: use the `security-reviewer` subagent (`.claude/agents/security-reviewer.md`); still open: rate limit for non-auth routes, max lengths on user input (zod + `express.json` limit), revoke sessions on email change
 
