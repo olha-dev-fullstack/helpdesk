@@ -1,6 +1,7 @@
 import type { SortingState } from "@tanstack/react-table";
 import type {
   SelectOption,
+  SenderType,
   Ticket,
   TicketCategory,
   TicketFilters,
@@ -11,6 +12,8 @@ import type {
 export const ALL = "all";
 
 export const TICKETS_QUERY_KEY = "tickets";
+export const REPLIES_QUERY_KEY = "ticket-replies";
+export const MAX_REPLY_LENGTH = 10_000;
 export const ASSIGNEES_QUERY_KEY = "ticket-assignees";
 
 /** Select value meaning "no assignee". */
@@ -75,3 +78,8 @@ export const editCategoryOptions = categoryOptions.filter((o) => o.value !== ALL
 
 /** Select value meaning "no category" when editing a ticket. */
 export const UNCATEGORIZED = "none";
+
+export const senderTypeLabel: Record<SenderType, string> = {
+  agent: "Agent",
+  customer: "Customer",
+};

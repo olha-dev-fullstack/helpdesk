@@ -4,6 +4,7 @@ import { Prisma } from "../generated/prisma/client";
 import { prisma } from "../lib/prisma";
 import { isPrismaError } from "../lib/prisma-errors";
 import { parseOrReject } from "../lib/validation";
+import { repliesRouter } from "./replies";
 
 export const ticketsRouter = Router();
 
@@ -186,3 +187,5 @@ ticketsRouter.patch("/:id", async (req, res) => {
   }
   res.json({ ticket });
 });
+
+ticketsRouter.use("/:id/replies", repliesRouter);

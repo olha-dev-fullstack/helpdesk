@@ -51,3 +51,18 @@ export interface SelectOption<V extends string = string> {
   value: V;
   label: string;
 }
+
+export type SenderType = "agent" | "customer";
+
+export interface Reply {
+  id: string;
+  body: string;
+  senderType: SenderType;
+  createdAt: string;
+  /** `null` when the author's account has since been deleted. */
+  author: (Assignee & { role: "admin" | "agent" }) | null;
+}
+
+export interface ReplyFormValues {
+  body: string;
+}

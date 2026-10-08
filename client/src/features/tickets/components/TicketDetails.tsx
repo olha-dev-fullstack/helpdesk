@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { TicketDetails as TicketDetailsData } from "../types";
 import { AssigneeSelect } from "./AssigneeSelect";
+import { ReplyThread } from "./ReplyThread";
 import { TicketCategoryBadge } from "./TicketCategoryBadge";
 import { TicketCategorySelect } from "./TicketCategorySelect";
 import { TicketStatusBadge } from "./TicketStatusBadge";
@@ -42,6 +43,7 @@ export function TicketDetails({ ticket }: { ticket: TicketDetailsData }) {
             <p className="whitespace-pre-wrap break-words">{ticket.body}</p>
           </CardContent>
         </Card>
+        <ReplyThread ticketId={ticket.id} />
       </div>
       <Card className="self-start">
         <CardHeader>
