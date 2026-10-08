@@ -23,7 +23,11 @@ export const auth = betterAuth({
   session: { expiresIn: 60 * 60 * 24 * 7 },
   advanced: { useSecureCookies: isProduction },
   database: prismaAdapter(prisma, { provider: "postgresql" }),
-  emailAndPassword: { enabled: true, minPasswordLength: MIN_PASSWORD_LENGTH },
+  emailAndPassword: {
+    enabled: true,
+    minPasswordLength: MIN_PASSWORD_LENGTH,
+    disableSignUp: true,
+  },
   rateLimit: {
     // On in every environment; e2e turns it off via RATE_LIMIT_ENABLED=false
     enabled: process.env.RATE_LIMIT_ENABLED !== "false",
@@ -37,6 +41,4 @@ export const auth = betterAuth({
     },
   },
   trustedOrigins,
-  disableSignUp: true,
 });
-  

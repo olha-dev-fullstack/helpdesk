@@ -56,16 +56,32 @@ The client proxies `/api/*` requests to the server via Vite config.
 - Routing (`client/src/App.tsx`): `ProtectedRoute` (requires session, renders NavBar) wraps `AdminRoute` (requires `role === "admin"`, else redirects to `/`); admin-only pages (e.g. `/users`) go inside `AdminRoute`
 - Client-side guards are UX only; admin API endpoints must also check the role on the server
 - Server guards (`server/src/index.ts`): public routes (`/api/auth/*`, `/api/health`) are registered first, then `app.use("/api", requireAuth)`; admin routers mount after `app.use("/api/users", requireAdmin)`. New public routes must go above the `requireAuth` line
+- Express 5: async route handlers need no try/catch; rejections reach the generic error handler
 - Server hardening: `helmet`, CORS limited to `TRUSTED_ORIGINS` (comma-separated, shared via `trustedOrigins` in `auth.ts`), generic 500 error handler, secure cookies in production
 - `auth.ts` throws at startup if `BETTER_AUTH_SECRET` is under 32 chars; passwords must be 12+ chars (`MIN_PASSWORD_LENGTH`, duplicated in `prisma/seed.ts`)
 - Rate limiting covers `/api/auth/*` only (Better Auth, in-memory, sign-in 5/min); disable with `RATE_LIMIT_ENABLED=false` (e2e does)
-- Security review: use the `security-reviewer` subagent (`.claude/agents/security-reviewer.md`); still open: bind Postgres to `127.0.0.1` in `docker-compose.yml`, rate limit for non-auth routes
+- Security review: use the `security-reviewer` subagent (`.claude/agents/security-reviewer.md`); still open: rate limit for non-auth routes, max lengths on user input (zod + `express.json` limit), revoke sessions on email change
 
 ## Frontend conventions
 
 - Import with the `@/` alias (maps to `client/src`)
 - Use shadcn components from `@/components/ui` and Tailwind utilities; no custom CSS beyond `src/index.css` (Tailwind + shadcn theme variables)
 - Add components with `bunx --bun shadcn@latest add <name>`
+- Data fetching: use axios for HTTP requests and TanStack Query (`@tanstack/react-query`) for server state (`useQuery`/`useMutation`); no raw `fetch` + `useEffect`. `QueryClientProvider` is set up in `client/src/main.tsx`
+- Use `Skeleton` (`@/components/ui/skeleton`) for loading states, not "Loading..." text
+- Admin user list: `GET /api/users` (`server/src/routes/users.ts`) feeds `client/src/pages/UsersPage.tsx`; `POST /api/users` (admin-only, always creates role `agent`, writes user + credential account via Prisma like the seed since `disableSignUp` blocks Better Auth sign-up) feeds `UserFormDialog` (create + edit); `PATCH /api/users/:id` (blank password = unchanged; a password change deletes that user's sessions) and `DELETE /api/users/:id` (rejects deleting yourself; sessions/accounts cascade) feed the row actions and `DeleteUserDialog`
+
+## Component tests (Vitest)
+
+- Vitest + jsdom + React Testing Library; config in the `test` block of `vite.config.ts`, setup in `client/src/test/setup.ts` (jest-dom matchers, auto-cleanup). No database or server needed
+- Run from `client/`:
+  - `bun run test` runs all tests once (`vitest run`)
+  - `bun run test src/pages/UsersPage.test.tsx` runs one file
+  - `bun run test -t "empty"` runs tests whose name matches
+  - `bunx vitest` starts watch mode
+  - `bunx tsc --noEmit -p tsconfig.app.json` typechecks tests too
+- Run component tests after changing anything under `client/src`; e2e (below) is a separate suite
+- Put tests next to the component (`Foo.test.tsx`); mock axios with `vi.mock("axios")` and wrap in a `QueryClientProvider` with `retry: false`
 
 ## E2E tests (Playwright)
 

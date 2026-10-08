@@ -6,6 +6,7 @@ import { auth, trustedOrigins } from "./lib/auth";
 import { prisma } from "./lib/prisma";
 import { requireAdmin } from "./middlewares/require-admin";
 import { requireAuth } from "./middlewares/require-auth";
+import { usersRouter } from "./routes/users";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -35,6 +36,7 @@ app.get("/api/health", async (_req, res) => {
 app.use("/api", requireAuth);
 // Admin-only routes: mount their routers after this guard
 app.use("/api/users", requireAdmin);
+app.use("/api/users", usersRouter);
 
 // Generic handler so errors never leak stack traces to clients
 const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
