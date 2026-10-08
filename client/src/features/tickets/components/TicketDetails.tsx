@@ -1,7 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { categoryLabel } from "../constants";
 import type { TicketDetails as TicketDetailsData } from "../types";
+import { AssigneeSelect } from "./AssigneeSelect";
+import { TicketCategoryBadge } from "./TicketCategoryBadge";
+import { TicketCategorySelect } from "./TicketCategorySelect";
 import { TicketStatusBadge } from "./TicketStatusBadge";
+import { TicketStatusSelect } from "./TicketStatusSelect";
 
 function Detail({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -12,30 +15,50 @@ function Detail({ label, children }: { label: string; children: React.ReactNode 
   );
 }
 
+/** Left column reads the ticket; the right column changes it. */
 export function TicketDetails({ ticket }: { ticket: TicketDetailsData }) {
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-3xl font-semibold">{ticket.subject}</h1>
-        <TicketStatusBadge status={ticket.status} />
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="space-y-6">
+        <div className="space-y-3">
+          <h1 className="text-3xl font-semibold">{ticket.subject}</h1>
+          <div className="flex flex-wrap items-center gap-2">
+            <TicketStatusBadge status={ticket.status} />
+            <TicketCategoryBadge category={ticket.category} />
+          </div>
+        </div>
+        <dl className="grid gap-4 sm:grid-cols-2">
+          <Detail label="Sender">
+            <div>{ticket.fromName ?? "Unknown"}</div>
+            <div className="text-sm text-muted-foreground">{ticket.fromEmail}</div>
+          </Detail>
+          <Detail label="Created">{new Date(ticket.createdAt).toLocaleString()}</Detail>
+        </dl>
+        <Card>
+          <CardHeader>
+            <CardTitle>Message</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="whitespace-pre-wrap break-words">{ticket.body}</p>
+          </CardContent>
+        </Card>
       </div>
-      <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Detail label="Sender">
-          <div>{ticket.fromName ?? "Unknown"}</div>
-          <div className="text-sm text-muted-foreground">{ticket.fromEmail}</div>
-        </Detail>
-        <Detail label="Category">
-          {ticket.category ? categoryLabel[ticket.category] : "—"}
-        </Detail>
-        <Detail label="Assigned to">{ticket.assignedTo?.name ?? "Unassigned"}</Detail>
-        <Detail label="Created">{new Date(ticket.createdAt).toLocaleString()}</Detail>
-      </dl>
-      <Card>
+      <Card className="self-start">
         <CardHeader>
-          <CardTitle>Message</CardTitle>
+          <CardTitle>Manage ticket</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="whitespace-pre-wrap break-words">{ticket.body}</p>
+          <dl className="space-y-4">
+            <Detail label="Status">
+              <TicketStatusSelect ticketId={ticket.id} status={ticket.status} />
+            </Detail>
+            <Detail label="Category">
+              <TicketCategorySelect ticketId={ticket.id} category={ticket.category} />
+            </Detail>
+            <Detail label="Assigned to">
+              <AssigneeSelect ticketId={ticket.id} assignee={ticket.assignedTo} />
+            </Detail>
+          </dl>
         </CardContent>
       </Card>
     </div>

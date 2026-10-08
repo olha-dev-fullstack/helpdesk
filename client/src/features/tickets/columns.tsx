@@ -6,8 +6,9 @@ import {
 } from "@tanstack/react-table";
 import { Link } from "react-router";
 import { SenderCell } from "./components/SenderCell";
+import { TicketCategoryBadge } from "./components/TicketCategoryBadge";
 import { TicketStatusBadge } from "./components/TicketStatusBadge";
-import { categoryLabel, ticketPath } from "./constants";
+import { ticketPath } from "./constants";
 import type { Ticket } from "./types";
 
 export const ticketTableFeatures = tableFeatures({
@@ -41,8 +42,7 @@ export const ticketColumns = columnHelper.columns([
   columnHelper.accessor((t) => t.category, {
     id: "category",
     header: "Category",
-    cell: ({ row }) =>
-      row.original.category ? categoryLabel[row.original.category] : "—",
+    cell: ({ row }) => <TicketCategoryBadge category={row.original.category} />,
   }),
   columnHelper.accessor((t) => t.status, {
     id: "status",

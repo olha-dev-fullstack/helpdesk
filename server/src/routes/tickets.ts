@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { Prisma } from "../generated/prisma/client";
 import { prisma } from "../lib/prisma";
+import { isPrismaError } from "../lib/prisma-errors";
 import { parseOrReject } from "../lib/validation";
 
 export const ticketsRouter = Router();
@@ -27,11 +28,14 @@ const MAX_SEARCH_LENGTH = 200;
 // Prisma passes `contains` straight into LIKE, so escape the wildcards to match them literally
 const escapeLike = (text: string) => text.replace(/[\\%_]/g, "\\$&");
 
+const TICKET_STATUSES = ["open", "resolved", "closed"] as const;
+const TICKET_CATEGORIES = ["general_question", "technical_question", "refund_request"] as const;
+
 const listQuerySchema = z.object({
-  status: z.enum(["open", "resolved", "closed"], "Invalid status").optional(),
+  status: z.enum(TICKET_STATUSES, "Invalid status").optional(),
   // "none" matches tickets that have not been classified yet
   category: z
-    .enum(["general_question", "technical_question", "refund_request", "none"], "Invalid category")
+    .enum([...TICKET_CATEGORIES, "none"], "Invalid category")
     .optional(),
   search: z
     .string("Invalid search")
@@ -95,6 +99,16 @@ ticketsRouter.get("/", async (req, res) => {
   });
 });
 
+// Agents a ticket can be assigned to; registered before "/:id" so it isn't read as an id
+ticketsRouter.get("/assignees", async (_req, res) => {
+  const assignees = await prisma.user.findMany({
+    where: { role: "agent" },
+    select: { id: true, name: true },
+    orderBy: [{ name: "asc" }, { id: "asc" }],
+  });
+  res.json({ assignees });
+});
+
 const ticketDetailSelect = {
   ...ticketSelect,
   body: true,
@@ -109,6 +123,65 @@ ticketsRouter.get("/:id", async (req, res) => {
   });
   if (!ticket) {
     res.status(404).json({ error: "Ticket not found" });
+    return;
+  }
+  res.json({ ticket });
+});
+
+// Any subset of these fields; `null` clears the category or the assignee
+const updateSchema = z
+  .object({
+    status: z.enum(TICKET_STATUSES, "Invalid status").optional(),
+    category: z.enum(TICKET_CATEGORIES, "Invalid category").nullable().optional(),
+    assignedToId: z
+      .string("Invalid assignedToId")
+      .min(1, "Invalid assignedToId")
+      .nullable()
+      .optional(),
+  })
+  .refine(
+    (v) => Object.values(v).some((x) => x !== undefined),
+    "Provide status, category or assignedToId",
+  );
+
+ticketsRouter.patch("/:id", async (req, res) => {
+  const input = parseOrReject(updateSchema, req.body, res);
+  if (!input) return;
+
+  const id = String(req.params.id);
+  if (typeof input.assignedToId === "string") {
+    const assignee = await prisma.user.findUnique({
+      where: { id: input.assignedToId },
+      select: { role: true },
+    });
+    if (!assignee) {
+      res.status(400).json({ error: "Assignee not found" });
+      return;
+    }
+    if (assignee.role !== "agent") {
+      res.status(400).json({ error: "Tickets can only be assigned to agents" });
+      return;
+    }
+  }
+
+  // The FK still guards against the assignee being deleted after the check above
+  const ticket = await prisma.ticket
+    .update({
+      where: { id },
+      data: input,
+      select: ticketDetailSelect,
+    })
+    .catch((err) => {
+      if (isPrismaError(err, "P2025")) return "not-found" as const;
+      if (isPrismaError(err, "P2003")) return "no-assignee" as const;
+      throw err;
+    });
+  if (ticket === "not-found") {
+    res.status(404).json({ error: "Ticket not found" });
+    return;
+  }
+  if (ticket === "no-assignee") {
+    res.status(400).json({ error: "Assignee not found" });
     return;
   }
   res.json({ ticket });

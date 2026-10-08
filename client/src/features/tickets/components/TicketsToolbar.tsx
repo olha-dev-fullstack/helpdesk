@@ -3,7 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { categoryOptions, statusOptions } from "../constants";
 import type { TicketFilterControls } from "../hooks/useTicketFilters";
-import { FilterSelect } from "./FilterSelect";
+import { CategoryOptionLabel } from "./CategoryOptionLabel";
+import { OptionSelect } from "./OptionSelect";
+import { StatusOptionLabel } from "./StatusOptionLabel";
 
 export function TicketsToolbar({ controls }: { controls: TicketFilterControls }) {
   const { searchInput, setSearchInput, filters, setStatus, setCategory, hasFilters, clear } =
@@ -25,18 +27,20 @@ export function TicketsToolbar({ controls }: { controls: TicketFilterControls })
           onChange={(e) => setSearchInput(e.target.value)}
         />
       </div>
-      <FilterSelect
+      <OptionSelect
         label="Filter by status"
         className="w-40"
         value={filters.status}
         options={statusOptions}
+        renderOption={(option) => <StatusOptionLabel option={option} />}
         onChange={setStatus}
       />
-      <FilterSelect
+      <OptionSelect
         label="Filter by category"
         className="w-48"
         value={filters.category}
         options={categoryOptions}
+        renderOption={(option) => <CategoryOptionLabel option={option} />}
         onChange={setCategory}
       />
       {hasFilters && (

@@ -82,7 +82,7 @@ test.describe("tickets", () => {
     await expect(row).toHaveCount(1);
     await expect(row).toContainText(data.fromName);
     await expect(row).toContainText(data.from);
-    await expect(row).toContainText("open");
+    await expect(row).toContainText("Open");
   });
 
   test("Tickets link in the nav bar opens the page", async ({ page }) => {

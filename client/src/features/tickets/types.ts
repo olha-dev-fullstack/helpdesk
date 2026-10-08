@@ -16,10 +16,22 @@ export interface Ticket {
   createdAt: string;
 }
 
+export interface Assignee {
+  id: string;
+  name: string;
+}
+
 export interface TicketDetails extends Ticket {
   body: string;
   updatedAt: string;
-  assignedTo: { id: string; name: string } | null;
+  assignedTo: Assignee | null;
+}
+
+/** Fields that can be changed on a ticket; `null` clears the category or assignee. */
+export interface TicketUpdate {
+  status?: TicketStatus;
+  category?: TicketCategory | null;
+  assignedToId?: string | null;
 }
 
 export interface TicketsResponse {

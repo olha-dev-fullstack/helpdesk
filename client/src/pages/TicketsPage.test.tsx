@@ -72,12 +72,12 @@ describe("TicketsPage", () => {
     const first = within(table).getByRole("row", { name: /Cannot log in/ });
     expect(within(first).getByText("Ann")).toBeInTheDocument();
     expect(within(first).getByText("ann@example.com")).toBeInTheDocument();
-    expect(within(first).getByText("Technical question")).toBeInTheDocument();
-    expect(within(first).getByText("open")).toBeInTheDocument();
+    expect(within(first).getByText("Technical Question")).toBeInTheDocument();
+    expect(within(first).getByText("Open")).toBeInTheDocument();
 
     const second = within(table).getByRole("row", { name: /Refund please/ });
     expect(within(second).getByText("bob@example.com")).toBeInTheDocument();
-    expect(within(second).getByText("resolved")).toBeInTheDocument();
+    expect(within(second).getByText("Resolved")).toBeInTheDocument();
     // No sender name or category yet
     expect(within(second).getByText("Unknown")).toBeInTheDocument();
     expect(within(second).getByText("—")).toBeInTheDocument();

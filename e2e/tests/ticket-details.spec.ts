@@ -87,11 +87,12 @@ test.describe("ticket details page", () => {
     await expect(page).toHaveURL(new RegExp(`/tickets/${created.id}$`));
 
     await expect(page.getByRole("heading", { level: 1, name: created.subject })).toBeVisible();
-    await expect(page.getByText("open", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 }).locator("..").getByText("Open", { exact: true })).toBeVisible();
+    await expect(page.getByRole("combobox", { name: "Ticket status" })).toContainText("Open");
     await expect(page.getByText("Dana Detail")).toBeVisible();
     await expect(page.getByText(created.from)).toBeVisible();
-    await expect(page.getByText("Unassigned")).toBeVisible();
-    await expect(page.getByText("—", { exact: true })).toBeVisible();
+    await expect(page.getByRole("combobox", { name: "Assign ticket" })).toContainText("Unassigned");
+    await expect(page.getByRole("combobox", { name: "Ticket category" })).toContainText("Uncategorized");
     await expect(page.getByText("Message", { exact: true })).toBeVisible();
     await expect(page.getByText("First line")).toBeVisible();
     await expect(page.getByText("Second line")).toBeVisible();

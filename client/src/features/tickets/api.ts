@@ -1,7 +1,7 @@
 import type { PaginationState, SortingState } from "@tanstack/react-table";
 import axios from "axios";
 import { ALL } from "./constants";
-import type { TicketDetails, TicketFilters, TicketsResponse } from "./types";
+import type { Assignee, TicketDetails, TicketUpdate, TicketFilters, TicketsResponse } from "./types";
 
 export interface TicketsQuery {
   sorting: SortingState;
@@ -30,5 +30,15 @@ export async function fetchTickets({
 
 export async function fetchTicket(id: string): Promise<TicketDetails> {
   const { data } = await axios.get<{ ticket: TicketDetails }>(`/api/tickets/${id}`);
+  return data.ticket;
+}
+
+export async function fetchAssignees(): Promise<Assignee[]> {
+  const { data } = await axios.get<{ assignees: Assignee[] }>("/api/tickets/assignees");
+  return data.assignees;
+}
+
+export async function updateTicket(id: string, update: TicketUpdate): Promise<TicketDetails> {
+  const { data } = await axios.patch<{ ticket: TicketDetails }>(`/api/tickets/${id}`, update);
   return data.ticket;
 }

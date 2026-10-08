@@ -192,7 +192,7 @@ test.describe("tickets page", () => {
     await page.goto("/tickets");
     const cells = page.getByRole("row").filter({ hasText: created.subject }).getByRole("cell");
     await expect(cells.nth(2)).toHaveText("—");
-    await expect(cells.nth(3)).toHaveText("open");
+    await expect(cells.nth(3)).toHaveText("Open");
     const createdText = (await cells.nth(4).innerText()).trim();
     expect(createdText).not.toBe("");
     expect(createdText).toMatch(/\d/);
@@ -793,26 +793,30 @@ test.describe("tickets page search and filters", () => {
   });
 
   test("Clear filters also resets the select filters", async ({ page }) => {
-    await createTicket(page.request);
+    const created = await createTicket(page.request);
     await loginViaApi(page, admin);
     await page.goto("/tickets");
 
+    // Search by own subject so tickets other specs closed do not match
+    await searchBox(page).fill(created.subject);
     await choose(page, "Filter by status", "Closed");
     await expect(noMatch(page)).toBeVisible();
     await expect(page.getByRole("combobox", { name: "Filter by status" })).toContainText("Closed");
 
     await clear(page).click();
-    await expect(page.getByRole("combobox", { name: "Filter by status" })).toContainText("All statuses");
-    await expect(page.getByRole("combobox", { name: "Filter by category" })).toContainText("All categories");
+    await expect(page.getByRole("combobox", { name: "Filter by status" })).toContainText("All Statuses");
+    await expect(page.getByRole("combobox", { name: "Filter by category" })).toContainText("All Categories");
     await expect(clear(page)).toBeHidden();
+    await expect(searchBox(page)).toHaveValue("");
     await expect(page.getByRole("row").nth(1)).toBeVisible();
   });
 
   test("selecting status Closed sends status=closed and shows no matches", async ({ page }) => {
-    await createTicket(page.request);
+    const created = await createTicket(page.request);
     await loginViaApi(page, admin);
     await page.goto("/tickets");
-    await expect(page.getByRole("row").nth(1)).toBeVisible();
+    await searchBox(page).fill(created.subject);
+    await expect(page.getByRole("row").filter({ hasText: created.subject })).toHaveCount(1);
 
     const req = page.waitForRequest(ticketsRequest((p) => p.get("status") === "closed"));
     await choose(page, "Filter by status", "Closed");
@@ -835,12 +839,14 @@ test.describe("tickets page search and filters", () => {
   });
 
   test("selecting a real category shows no matches for unclassified tickets", async ({ page }) => {
-    await createTicket(page.request);
+    const created = await createTicket(page.request);
     await loginViaApi(page, admin);
     await page.goto("/tickets");
+    await searchBox(page).fill(created.subject);
+    await expect(page.getByRole("row").filter({ hasText: created.subject })).toHaveCount(1);
 
     const req = page.waitForRequest(ticketsRequest((p) => p.get("category") === "refund_request"));
-    await choose(page, "Filter by category", "Refund request");
+    await choose(page, "Filter by category", "Refund Request");
     await req;
     await expect(noMatch(page)).toBeVisible();
   });
