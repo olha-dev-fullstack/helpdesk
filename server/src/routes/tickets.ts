@@ -73,7 +73,7 @@ ticketsRouter.get("/", async (req, res) => {
       category: query.category === "none" ? null : query.category,
     }),
     ...(search && {
-      OR: (["subject", "fromName", "fromEmail", "body"] as const).map((field) => ({
+      OR: (["subject", "fromName", "fromEmail", "bodyHtml"] as const).map((field) => ({
         [field]: { contains: search, mode: "insensitive" as const },
       })),
     }),
@@ -109,7 +109,7 @@ ticketsRouter.get("/assignees", async (_req, res) => {
 
 const ticketDetailSelect = {
   ...ticketSelect,
-  body: true,
+  bodyHtml: true,
   updatedAt: true,
   assignedTo: { select: { id: true, name: true } },
 } as const;

@@ -99,7 +99,7 @@ enum TicketCategory {
 model Ticket {
   id           String          @id @default(cuid())
   subject      String
-  body         String
+  bodyHtml     String
   fromEmail    String
   fromName     String?
   status       TicketStatus    @default(open)
@@ -126,6 +126,7 @@ enum SenderType {
 model Reply {
   id        String   @id @default(cuid())
   body      String
+  bodyHtml  String?
   ticketId  String
   ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   senderType SenderType @default(agent)

@@ -20,7 +20,7 @@ export interface Assignee {
 }
 
 export interface TicketDetails extends Ticket {
-  body: string;
+  bodyHtml: string;
   updatedAt: string;
   assignedTo: Assignee | null;
 }
@@ -46,6 +46,7 @@ export interface SelectOption<V extends string = string> {
 export interface Reply {
   id: string;
   body: string;
+  bodyHtml: string | null;
   senderType: SenderType;
   createdAt: string;
   /** `null` when the author's account has since been deleted. */

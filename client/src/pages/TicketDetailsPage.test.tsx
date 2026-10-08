@@ -11,7 +11,7 @@ vi.mock("axios");
 const ticket = {
   id: "abc",
   subject: "Cannot log in",
-  body: "I reset my password twice.\nStill failing.",
+  bodyHtml: "I reset my password twice.\nStill failing.",
   fromEmail: "ann@example.com",
   fromName: "Ann",
   status: "open",

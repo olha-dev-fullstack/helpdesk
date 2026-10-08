@@ -67,7 +67,7 @@ inboundEmailRouter.post("/", async (req, res) => {
   const normalizedMessageId = input.messageId;
   const data = {
     subject: input.subject ?? NO_SUBJECT,
-    body: input.text,
+    bodyHtml: input.text,
     fromEmail: input.from,
     fromName: input.fromName,
     messageId: normalizedMessageId,

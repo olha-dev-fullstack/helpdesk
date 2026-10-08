@@ -37,7 +37,7 @@ test.describe("ticket details API", () => {
       fromName: "Dana Detail",
       status: "open",
       category: null,
-      body: created.text,
+      bodyHtml: created.text,
       assignedTo: null,
     });
     expect(Number.isNaN(Date.parse(ticket.createdAt))).toBe(false);
@@ -50,7 +50,7 @@ test.describe("ticket details API", () => {
     await loginViaApi(page, admin);
 
     const { ticket } = await (await page.request.get(`/api/tickets/${created.id}`)).json();
-    expect(ticket.body).toBe(text);
+    expect(ticket.bodyHtml).toBe(text);
   });
 
   test("an agent can read a ticket", async ({ page }) => {

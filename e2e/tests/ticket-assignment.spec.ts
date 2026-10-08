@@ -82,7 +82,7 @@ test.describe("assign ticket API", () => {
       id: ticket.id,
       subject: ticket.subject,
       fromEmail: ticket.from,
-      body: ticket.text,
+      bodyHtml: ticket.text,
       assignedTo: { id: agentUser.id, name: agentUser.name },
     });
     expect(body.updatedAt).not.toBe(before.updatedAt);

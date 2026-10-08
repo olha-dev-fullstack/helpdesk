@@ -45,7 +45,7 @@ test.describe("update ticket API", () => {
     for (const status of ["resolved", "closed", "open"]) {
       const res = await patch(page, t.id, { status });
       expect(res.status()).toBe(200);
-      expect((await res.json()).ticket).toMatchObject({ id: t.id, status, subject: t.subject, body: t.text });
+      expect((await res.json()).ticket).toMatchObject({ id: t.id, status, subject: t.subject, bodyHtml: t.text });
       expect((await getTicket(page.request, t.id)).status).toBe(status);
       expect(await listIds(page.request, t.token, `status=${status}`)).toContain(t.id);
       for (const other of ["open", "resolved", "closed"].filter((s) => s !== status)) {

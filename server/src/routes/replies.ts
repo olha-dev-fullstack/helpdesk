@@ -10,6 +10,7 @@ export const repliesRouter = Router({ mergeParams: true });
 const replySelect = {
   id: true,
   body: true,
+  bodyHtml: true,
   senderType: true,
   createdAt: true,
   author: { select: { id: true, name: true, role: true } },

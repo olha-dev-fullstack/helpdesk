@@ -10,6 +10,7 @@ vi.mock("axios");
 const reply = {
   id: "r1",
   body: "Try resetting again.",
+  bodyHtml: null,
   senderType: "agent",
   createdAt: "2026-03-02T10:00:00.000Z",
   author: { id: "u1", name: "Alex Agent", role: "agent" as const },

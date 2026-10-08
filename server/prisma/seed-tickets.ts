@@ -123,7 +123,7 @@ async function main() {
     const createdAt = new Date(now - ageDays * 24 * 60 * 60 * 1000);
     return {
       subject,
-      body: template.body,
+      bodyHtml: template.body,
       fromEmail: sender.email,
       fromName: sender.name,
       status: pickStatus(ageDays),

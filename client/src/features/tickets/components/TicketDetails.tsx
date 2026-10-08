@@ -43,7 +43,7 @@ export function TicketDetails({ ticket }: { ticket: TicketDetailsData }) {
           <CardContent>
             <p
               className="whitespace-pre-wrap break-words"
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ticket.body) }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ticket.bodyHtml) }}
             />
           </CardContent>
         </Card>
