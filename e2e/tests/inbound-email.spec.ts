@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { serverEnv } from "../env";
-import { admin, loginViaApi } from "./helpers";
+import { admin, loginViaApi, waitForTicketSettled } from "./helpers";
 
 const URL = "/api/webhooks/inbound-email";
 const secretHeader = { "x-webhook-secret": serverEnv.INBOUND_EMAIL_SECRET };
@@ -43,6 +43,7 @@ test.describe("inbound email webhook", () => {
     const first = await page.request.post(URL, { data, headers: secretHeader });
     expect(first.status()).toBe(201);
     const { id } = await first.json();
+    await waitForTicketSettled(id);
 
     const second = await page.request.post(URL, { data, headers: secretHeader });
     expect(second.status()).toBe(200);
@@ -71,6 +72,7 @@ test.describe("tickets", () => {
     const data = payload();
     const res = await page.request.post(URL, { data, headers: secretHeader });
     expect(res.status()).toBe(201);
+    await waitForTicketSettled((await res.json()).id);
 
     await loginViaApi(page, admin);
     await page.goto("/tickets");

@@ -1,6 +1,6 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 import { serverEnv } from "../env";
-import { admin, agent, loginViaApi } from "./helpers";
+import { admin, agent, loginViaApi, waitForTicketSettled } from "./helpers";
 
 const WEBHOOK = "/api/webhooks/inbound-email";
 const secretHeader = { "x-webhook-secret": serverEnv.INBOUND_EMAIL_SECRET };
@@ -17,7 +17,10 @@ async function createTicket(request: APIRequestContext) {
   };
   const res = await request.post(WEBHOOK, { data, headers: secretHeader });
   expect(res.status()).toBe(201);
-  return { ...data, id: (await res.json()).id as string, token: id };
+  const ticketId = (await res.json()).id as string;
+  // Fresh tickets are new -> processing -> open/resolved by a background job; settle so status is stable
+  await waitForTicketSettled(ticketId);
+  return { ...data, id: ticketId, token: id };
 }
 
 async function getTicket(request: APIRequestContext, id: string) {
@@ -144,6 +147,18 @@ test.describe("update ticket API", () => {
       expect(await res.json()).toEqual({ error });
     }
     expect(await getTicket(page.request, t.id)).toMatchObject({ status: "open", category: null, assignedTo: null });
+  });
+
+  test("status new and processing cannot be set via PATCH", async ({ page }) => {
+    const t = await createTicket(page.request);
+    await loginViaApi(page, admin);
+    const before = (await getTicket(page.request, t.id)).status;
+    for (const status of ["new", "processing"]) {
+      const res = await patch(page, t.id, { status });
+      expect(res.status(), status).toBe(400);
+      expect(await res.json()).toEqual({ error: "Invalid status" });
+    }
+    expect((await getTicket(page.request, t.id)).status).toBe(before);
   });
 
   test("malformed JSON returns 400", async ({ page }) => {

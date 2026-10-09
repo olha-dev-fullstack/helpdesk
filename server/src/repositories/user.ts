@@ -1,3 +1,4 @@
+import { AI_AGENT_EMAIL } from "@core";
 import { Prisma } from "../generated/prisma/client";
 import { prisma } from "../lib/prisma";
 import { isPrismaError } from "../lib/prisma-errors";
@@ -16,6 +17,12 @@ export function listUsers() {
 
 export function findUserRole(id: string) {
   return prisma.user.findUnique({ where: { id }, select: { role: true } });
+}
+
+export function findAiAgentId() {
+  return prisma.user
+    .findUnique({ where: { email: AI_AGENT_EMAIL }, select: { id: true } })
+    .then((user) => user?.id ?? null);
 }
 
 export function findUserIdByEmail(email: string) {

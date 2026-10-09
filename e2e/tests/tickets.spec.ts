@@ -1,6 +1,6 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 import { serverEnv } from "../env";
-import { admin, agent, loginViaApi } from "./helpers";
+import { admin, agent, loginViaApi, waitForTicketSettled, waitForTicketsSettled } from "./helpers";
 
 const WEBHOOK = "/api/webhooks/inbound-email";
 const secretHeader = { "x-webhook-secret": serverEnv.INBOUND_EMAIL_SECRET };
@@ -28,12 +28,19 @@ function payload(overrides: Record<string, unknown> = {}) {
   };
 }
 
-async function createTicket(request: APIRequestContext, overrides: Record<string, unknown> = {}) {
+async function postTicket(request: APIRequestContext, overrides: Record<string, unknown> = {}) {
   const data = payload(overrides);
   const res = await request.post(WEBHOOK, { data, headers: secretHeader });
   expect(res.status()).toBe(201);
   const { id } = await res.json();
   return { ...data, id: id as string };
+}
+
+async function createTicket(request: APIRequestContext, overrides: Record<string, unknown> = {}) {
+  const ticket = await postTicket(request, overrides);
+  // The list hides new/processing tickets, so wait for the background job to finish
+  await waitForTicketSettled(ticket.id);
+  return ticket;
 }
 
 type TicketsResponse = {
@@ -108,26 +115,37 @@ test.describe("tickets API", () => {
       subject: created.subject,
       fromEmail: created.from,
       fromName: created.fromName,
-      status: "open",
       category: null,
     });
+    expect(ticket!.status).toMatch(/^(open|resolved)$/);
     expect(Number.isNaN(Date.parse(ticket!.createdAt))).toBe(false);
     expect(JSON.stringify(ticket)).not.toContain(created.text);
   });
 
-  test("status=open includes new tickets, status=resolved and closed exclude them", async ({ page }) => {
+  test("a fresh ticket appears in the list once settled (open or resolved), never closed; filters only return their status", async ({ page }) => {
     const created = await createTicket(page.request);
 
     await loginViaApi(page, admin);
-    const open = await listTickets(page.request, "?status=open");
-    expect(open.map((t) => t.id)).toContain(created.id);
-    expect(open.every((t) => t.status === "open")).toBe(true);
+    await expect
+      .poll(async () => (await listTickets(page.request)).find((t) => t.id === created.id)?.status)
+      .toMatch(/^(open|resolved)$/);
 
-    for (const status of ["resolved", "closed"]) {
-      const others = await listTickets(page.request, `?status=${status}`);
-      expect(others.map((t) => t.id)).not.toContain(created.id);
-      expect(others.every((t) => t.status === status)).toBe(true);
+    for (const status of ["open", "resolved", "closed"]) {
+      const list = await listTickets(page.request, `?status=${status}`);
+      expect(list.every((t) => t.status === status)).toBe(true);
+      if (status === "closed") expect(list.map((t) => t.id)).not.toContain(created.id);
     }
+  });
+
+  test("status=new and status=processing are rejected and the list never contains them", async ({ page }) => {
+    await loginViaApi(page, admin);
+    for (const status of ["new", "processing"]) {
+      const res = await page.request.get(`/api/tickets?status=${status}`);
+      expect(res.status()).toBe(400);
+      expect(await res.json()).toEqual({ error: "Invalid status" });
+    }
+    const all = await listTickets(page.request);
+    expect(all.some((t) => t.status === "new" || t.status === "processing")).toBe(false);
   });
 
   test("invalid status returns 400", async ({ page }) => {
@@ -192,7 +210,7 @@ test.describe("tickets page", () => {
     await page.goto("/tickets");
     const cells = page.getByRole("row").filter({ hasText: created.subject }).getByRole("cell");
     await expect(cells.nth(2)).toHaveText("—");
-    await expect(cells.nth(3)).toHaveText("Open");
+    await expect(cells.nth(3)).toHaveText(/^(Open|Resolved)$/);
     const createdText = (await cells.nth(4).innerText()).trim();
     expect(createdText).not.toBe("");
     expect(createdText).toMatch(/\d/);
@@ -343,8 +361,9 @@ async function seedMany(request: APIRequestContext, count: number) {
   const prefix = `Pagespec${Date.now()}x${Math.random().toString(36).slice(2, 8)}`;
   const ids: string[] = [];
   for (let i = 0; i < count; i++) {
-    ids.push((await createTicket(request, { subject: `${prefix} #${i}` })).id);
+    ids.push((await postTicket(request, { subject: `${prefix} #${i}` })).id);
   }
+  await waitForTicketsSettled(ids);
   return { prefix, ids };
 }
 
@@ -414,12 +433,13 @@ test.describe("tickets API pagination", () => {
   test("total respects the status filter", async ({ page }) => {
     await seedMany(page.request, 1);
     await loginViaApi(page, admin);
-    const open = await getPage(page.request, "?status=open&pageSize=5");
     const all = await getPage(page.request, "?pageSize=5");
-    expect(open.total).toBeGreaterThan(0);
-    expect(open.total).toBeLessThanOrEqual(all.total);
-    expect(open.totalPages).toBe(Math.max(1, Math.ceil(open.total / 5)));
-    expect(open.tickets.every((t) => t.status === "open")).toBe(true);
+    for (const status of ["open", "resolved"]) {
+      const body = await getPage(page.request, `?status=${status}&pageSize=5`);
+      expect(body.total).toBeLessThanOrEqual(all.total);
+      expect(body.totalPages).toBe(Math.max(1, Math.ceil(body.total / 5)));
+      expect(body.tickets.every((t) => t.status === status)).toBe(true);
+    }
 
     const closed = await getPage(page.request, "?status=closed&pageSize=5");
     expect(closed.total).toBeLessThan(all.total);
@@ -638,9 +658,12 @@ test.describe("tickets API search and category filter", () => {
     const target = await createTicket(page.request, { subject: `Subject ${t}` });
     await loginViaApi(page, admin);
 
-    const open = await getPage(page.request, q({ search: t, status: "open" }));
-    expect(open.tickets.map((x) => x.id)).toEqual([target.id]);
-    for (const status of ["resolved", "closed"]) {
+    const found: string[] = [];
+    for (const status of ["open", "resolved"]) {
+      found.push(...(await getPage(page.request, q({ search: t, status }))).tickets.map((x) => x.id));
+    }
+    expect(found).toEqual([target.id]);
+    for (const status of ["closed"]) {
       const none = await getPage(page.request, q({ search: t, status }));
       expect(none.tickets).toEqual([]);
       expect(none.total).toBe(0);

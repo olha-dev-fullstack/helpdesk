@@ -28,9 +28,8 @@ async function classifyTicket(id: string) {
   await ticketRepository.setCategoryIfUnset(id, output);
 }
 
-// Creates the queue and starts the worker; call once at server startup
+// Creates the queue and starts the worker; call once at server startup, after boss.start()
 export async function startClassifyWorker() {
-  await boss.start();
   await boss.createQueue(CLASSIFY_QUEUE);
   await boss.work<{ ticketId: string }>(CLASSIFY_QUEUE, async (jobs) => {
     // A throw makes pg-boss retry the job (see retry options in enqueueClassifyTicket)

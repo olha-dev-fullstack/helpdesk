@@ -4,6 +4,7 @@ import { parseOrReject } from "../lib/validation";
 import * as ticketRepository from "../repositories/ticket";
 import { inboundEmailSchema } from "../schemas/inbound-email";
 import { enqueueClassifyTicket } from "../services/classify";
+import { enqueueResolveTicket } from "../services/resolve";
 
 const NO_SUBJECT = "(no subject)";
 
@@ -40,6 +41,7 @@ export async function receiveEmail(req: Request, res: Response) {
   if (ticket) {
     // Classified by a queue worker so the webhook never waits on the model
     enqueueClassifyTicket(ticket.id);
+    enqueueResolveTicket(ticket.id);
     res.status(201).json({ id: ticket.id });
     return;
   }

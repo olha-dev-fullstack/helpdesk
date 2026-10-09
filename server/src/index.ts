@@ -6,9 +6,11 @@ import { auth, trustedOrigins } from "./lib/auth";
 import { prisma } from "./lib/prisma";
 import { boss } from "./lib/queue";
 import { startClassifyWorker } from "./services/classify";
+import { startResolveWorker } from "./services/resolve";
 import { requireAdmin } from "./middlewares/require-admin";
 import { requireAuth } from "./middlewares/require-auth";
 import { inboundEmailRouter } from "./routes/inbound-email";
+import { statsRouter } from "./routes/stats";
 import { ticketsRouter } from "./routes/tickets";
 import { usersRouter } from "./routes/users";
 import { errorHandler } from "./lib/errorHandler";
@@ -46,6 +48,7 @@ app.use("/api", requireAuth);
 // Admin-only routes: mount their routers after this guard
 app.use("/api/users", requireAdmin);
 app.use("/api/users", usersRouter);
+app.use("/api/stats", statsRouter);
 app.use("/api/tickets", ticketsRouter);
 
 app.use(errorHandler);
@@ -54,7 +57,9 @@ const server = app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
 
+await boss.start();
 await startClassifyWorker();
+await startResolveWorker();
 
 async function shutdown() {
   server.close();

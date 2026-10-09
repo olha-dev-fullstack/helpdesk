@@ -4,6 +4,8 @@ import { BASE_URL, CLIENT_PORT, SERVER_PORT, serverEnv } from "./env";
 export default defineConfig({
   testDir: "./tests",
   globalSetup: "./global-setup.ts",
+  // Tickets are settled by a polling queue worker (~2s per ticket), so seeding many tickets is slow
+  timeout: 120_000,
   fullyParallel: false,
   workers: 1,
   forbidOnly: !!process.env.CI,

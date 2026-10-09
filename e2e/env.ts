@@ -16,6 +16,8 @@ export const serverEnv = {
   TRUSTED_ORIGINS: BASE_URL,
   RATE_LIMIT_ENABLED: "false",
   INBOUND_EMAIL_SECRET: "e2e-only-inbound-secret-0123456789abcdef",
+  // No real AI calls in e2e: a missing key makes the resolve job fail locally and fall back to "open" quickly
+  AI_GATEWAY_API_KEY: "",
   SEED_ADMIN_EMAIL: ADMIN_EMAIL,
   SEED_ADMIN_PASSWORD: ADMIN_PASSWORD,
 };

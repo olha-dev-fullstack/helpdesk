@@ -1,4 +1,4 @@
-import { DEFAULT_PAGE_SIZE } from "@core";
+import { DEFAULT_PAGE_SIZE, EDITABLE_TICKET_STATUSES } from "@core";
 import type { SortingState } from "@tanstack/react-table";
 import type {
   SelectOption,
@@ -29,6 +29,8 @@ export const NO_FILTERS: TicketFilters = { search: "", status: ALL, category: AL
 export const DEFAULT_SORTING: SortingState = [{ id: "createdAt", desc: true }];
 
 export const statusLabel: Record<TicketStatus, string> = {
+  new: "New",
+  processing: "Processing",
   open: "Open",
   resolved: "Resolved",
   closed: "Closed",
@@ -42,6 +44,8 @@ export const categoryLabel: Record<TicketCategory, string> = {
 
 // Badge colors: soft tinted background in light mode, translucent in dark mode
 export const statusBadgeClass: Record<TicketStatus, string> = {
+  new: "bg-sky-100 text-sky-800 dark:bg-sky-500/20 dark:text-sky-300",
+  processing: "bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300",
   open: "bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300",
   resolved: "bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300",
   closed: "bg-slate-200 text-slate-700 dark:bg-slate-500/20 dark:text-slate-300",
@@ -69,9 +73,11 @@ export const categoryOptions: SelectOption<TicketFilters["category"]>[] = [
 ];
 
 // Options for editing a ticket (the filter options minus "All ...")
-export const editStatusOptions = statusOptions.filter((o) => o.value !== ALL) as SelectOption<
-  Exclude<TicketFilters["status"], typeof ALL>
->[];
+// `new` and `processing` are set by the auto-resolve job, never by agents
+export const EDITABLE_STATUSES: readonly TicketStatus[] = EDITABLE_TICKET_STATUSES;
+export const editStatusOptions = (
+  statusOptions.filter((o) => o.value !== ALL) as SelectOption<TicketStatus>[]
+).filter((o) => EDITABLE_STATUSES.includes(o.value));
 export const editCategoryOptions = categoryOptions.filter((o) => o.value !== ALL) as SelectOption<
   Exclude<TicketFilters["category"], typeof ALL>
 >[];

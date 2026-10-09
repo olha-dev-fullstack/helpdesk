@@ -1,3 +1,4 @@
+import { LISTED_TICKET_STATUSES } from "@core";
 import type { Prisma } from "../generated/prisma/client";
 import * as ticketRepository from "../repositories/ticket";
 import type { SortField, TicketListQuery } from "../schemas/tickets";
@@ -19,7 +20,8 @@ function buildOrderBy(sortBy: SortField, order: "asc" | "desc"): Prisma.TicketOr
 export async function listTickets(query: TicketListQuery) {
   const search = query.search && escapeLike(query.search);
   const where: Prisma.TicketWhereInput = {
-    ...(query.status && { status: query.status }),
+    // Tickets still being auto-resolved (new/processing) are hidden from the list
+    status: query.status ?? { in: [...LISTED_TICKET_STATUSES] },
     ...(query.category && { category: query.category === "none" ? null : query.category }),
     ...(search && {
       OR: (["subject", "fromName", "fromEmail", "bodyHtml"] as const).map((field) => ({

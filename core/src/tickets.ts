@@ -1,8 +1,13 @@
 import { z } from "zod";
 import { MAX_REPLY_LENGTH } from "./constants";
 
-export const TICKET_STATUSES = ["open", "resolved", "closed"] as const;
+export const TICKET_STATUSES = ["new", "processing", "open", "resolved", "closed"] as const;
 export type TicketStatus = (typeof TICKET_STATUSES)[number];
+
+// `new` and `processing` are owned by the auto-resolve job: agents can't set them,
+// and tickets in those states are hidden from the ticket list
+export const EDITABLE_TICKET_STATUSES = ["open", "resolved", "closed"] as const;
+export const LISTED_TICKET_STATUSES = EDITABLE_TICKET_STATUSES;
 
 export const TICKET_CATEGORIES = [
   "general_question",
@@ -34,7 +39,7 @@ export const polishSchema = z.object({
 // Any subset of these fields; `null` clears the category or the assignee
 export const ticketUpdateSchema = z
   .object({
-    status: z.enum(TICKET_STATUSES, "Invalid status").optional(),
+    status: z.enum(EDITABLE_TICKET_STATUSES, "Invalid status").optional(),
     category: z.enum(TICKET_CATEGORIES, "Invalid category").nullable().optional(),
     assignedToId: z
       .string("Invalid assignedToId")

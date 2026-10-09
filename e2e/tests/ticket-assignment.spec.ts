@@ -1,6 +1,6 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 import { AGENT_NAME, serverEnv } from "../env";
-import { admin, agent, loginViaApi } from "./helpers";
+import { admin, agent, loginViaApi, waitForTicketSettled } from "./helpers";
 
 const WEBHOOK = "/api/webhooks/inbound-email";
 const secretHeader = { "x-webhook-secret": serverEnv.INBOUND_EMAIL_SECRET };
@@ -19,7 +19,9 @@ async function createTicket(request: APIRequestContext) {
   };
   const res = await request.post(WEBHOOK, { data, headers: secretHeader });
   expect(res.status()).toBe(201);
-  return { ...data, id: (await res.json()).id as string };
+  const id2 = (await res.json()).id as string;
+  await waitForTicketSettled(id2);
+  return { ...data, id: id2 };
 }
 
 async function getAssignees(request: APIRequestContext): Promise<Assignee[]> {

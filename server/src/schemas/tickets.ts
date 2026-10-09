@@ -1,4 +1,4 @@
-import { DEFAULT_PAGE_SIZE, TICKET_CATEGORIES, TICKET_STATUSES } from "@core";
+import { DEFAULT_PAGE_SIZE, TICKET_CATEGORIES, LISTED_TICKET_STATUSES } from "@core";
 import { z } from "zod";
 
 export const MAX_PAGE_SIZE = 100;
@@ -8,7 +8,7 @@ export const SORT_FIELDS = ["subject", "sender", "category", "status", "createdA
 export type SortField = (typeof SORT_FIELDS)[number];
 
 export const listQuerySchema = z.object({
-  status: z.enum(TICKET_STATUSES, "Invalid status").optional(),
+  status: z.enum(LISTED_TICKET_STATUSES, "Invalid status").optional(),
   // "none" matches tickets that have not been classified yet
   category: z.enum([...TICKET_CATEGORIES, "none"], "Invalid category").optional(),
   search: z

@@ -1,6 +1,6 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
 import { serverEnv } from "../env";
-import { admin, agent, loginViaApi } from "./helpers";
+import { admin, agent, loginViaApi, waitForTicketSettled } from "./helpers";
 
 const WEBHOOK = "/api/webhooks/inbound-email";
 const secretHeader = { "x-webhook-secret": serverEnv.INBOUND_EMAIL_SECRET };
@@ -35,11 +35,11 @@ test.describe("ticket details API", () => {
       subject: created.subject,
       fromEmail: created.from,
       fromName: "Dana Detail",
-      status: "open",
       category: null,
       bodyHtml: created.text,
       assignedTo: null,
     });
+    expect(ticket.status).toMatch(/^(new|processing|open|resolved)$/);
     expect(Number.isNaN(Date.parse(ticket.createdAt))).toBe(false);
     expect(Number.isNaN(Date.parse(ticket.updatedAt))).toBe(false);
   });
@@ -79,6 +79,7 @@ test.describe("ticket details API", () => {
 test.describe("ticket details page", () => {
   test("opens from the list and shows all details", async ({ page }) => {
     const created = await createTicket(page.request);
+    await waitForTicketSettled(created.id);
     await loginViaApi(page, admin);
     await page.goto("/tickets");
     await page.getByLabel("Search tickets").fill(created.token);
@@ -174,6 +175,7 @@ test.describe("ticket details page", () => {
 
   test("HTML in the body is shown literally", async ({ page }) => {
     const created = await createTicket(page.request, { text: "Hello <b>x</b> and <script>window.__xss=1</script>" });
+    await waitForTicketSettled(created.id);
     await loginViaApi(page, admin);
     await page.goto(`/tickets/${created.id}`);
 
