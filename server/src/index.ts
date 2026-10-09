@@ -4,6 +4,8 @@ import express from "express";
 import helmet from "helmet";
 import { auth, trustedOrigins } from "./lib/auth";
 import { prisma } from "./lib/prisma";
+import { boss } from "./lib/queue";
+import { startClassifyWorker } from "./services/classify";
 import { requireAdmin } from "./middlewares/require-admin";
 import { requireAuth } from "./middlewares/require-auth";
 import { inboundEmailRouter } from "./routes/inbound-email";
@@ -48,6 +50,16 @@ app.use("/api/tickets", ticketsRouter);
 
 app.use(errorHandler);
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
+
+await startClassifyWorker();
+
+async function shutdown() {
+  server.close();
+  await boss.stop();
+  process.exit(0);
+}
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);

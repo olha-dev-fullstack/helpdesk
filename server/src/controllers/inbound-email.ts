@@ -3,7 +3,7 @@ import type { Request, Response } from "express";
 import { parseOrReject } from "../lib/validation";
 import * as ticketRepository from "../repositories/ticket";
 import { inboundEmailSchema } from "../schemas/inbound-email";
-import { classifyTicketInBackground } from "../services/classify";
+import { enqueueClassifyTicket } from "../services/classify";
 
 const NO_SUBJECT = "(no subject)";
 
@@ -38,8 +38,8 @@ export async function receiveEmail(req: Request, res: Response) {
     messageId: input.messageId,
   });
   if (ticket) {
-    // Classified after the response so the webhook never waits on the model
-    classifyTicketInBackground(ticket);
+    // Classified by a queue worker so the webhook never waits on the model
+    enqueueClassifyTicket(ticket.id);
     res.status(201).json({ id: ticket.id });
     return;
   }

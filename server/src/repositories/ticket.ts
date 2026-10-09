@@ -101,6 +101,10 @@ export function listAssignees() {
   });
 }
 
+export function findTicketForClassification(id: string) {
+  return prisma.ticket.findUnique({ where: { id }, select: { subject: true, bodyHtml: true, category: true } });
+}
+
 // Only fills an empty category, so a manual choice made meanwhile is never overwritten
 export function setCategoryIfUnset(id: string, category: TicketCategory) {
   return prisma.ticket.updateMany({ where: { id, category: null }, data: { category } });

@@ -45,11 +45,16 @@ The client proxies `/api/*` requests to the server via Vite config.
 
 ## Server layout
 
-- `server/src/routes` only wires paths to controller functions; one file per resource (`tickets`, `replies`, `polish`, `summary`, `users`, `inbound-email`)
-- `controllers`: parse input (`parseOrReject`), run all checks (404s, role, uniqueness, secrets), call repositories/services, send the response
-- `services`: business logic with no `req`/`res` (AI calls, password hashing, list query building)
-- `repositories`: the only place that touches `prisma`; they map Prisma error codes to `null`/string results
-- `schemas`: server-only zod schemas; schemas shared with the client stay in `@core`
+Request flow: `routes` -> `controllers` -> `services` -> `repositories` -> Prisma. Each layer only calls the one below it.
+
+- `server/src/routes`: only wires paths to controller functions, no logic; one file per resource (`tickets`, `replies`, `polish`, `summary`, `users`, `inbound-email`). Nested resources mount their router with `Router({ mergeParams: true })`
+- `server/src/controllers`: the HTTP layer. Parse input (`parseOrReject`), run all checks (404s, role, uniqueness, webhook secret), call repositories/services, send the response. Read ids with `String(req.params.id)`
+- `server/src/services`: business logic with no `req`/`res` (AI calls, password hashing, list query building). Only add one when there is logic beyond a repository call
+- `server/src/repositories`: the only code allowed to import `prisma`. They own `select` objects and map Prisma error codes (`isPrismaError`) to `null`/string results (`"not-found"`, `"conflict"`) that the controller turns into HTTP statuses. Checks that must be atomic with the write (e.g. "last admin" in `deleteUser`) stay inside the repository transaction
+- `server/src/schemas`: server-only zod schemas (ticket list query, inbound email) and their limits; schemas shared with the client stay in `@core`
+- `server/src/lib` is for infrastructure only (`prisma`, `auth`, `validation`, `prisma-errors`); `middlewares` for Express guards
+- New endpoint checklist: schema -> repository function -> (service) -> controller function -> route line; new public routes still go above `requireAuth` in `index.ts`
+- Files are named by resource without a layer suffix (`controllers/tickets.ts`, `repositories/ticket.ts`) and imported as namespaces (`import * as ticketRepository from "../repositories/ticket"`)
 
 ## Database (server)
 
@@ -71,7 +76,7 @@ The client proxies `/api/*` requests to the server via Vite config.
 - Routing (`client/src/App.tsx`): `ProtectedRoute` (requires session, renders NavBar) wraps `AdminRoute` (requires `role === "admin"`, else redirects to `/`); admin-only pages (e.g. `/users`) go inside `AdminRoute`
 - Client-side guards are UX only; admin API endpoints must also check the role on the server
 - Server guards (`server/src/index.ts`): public routes (`/api/auth/*`, `/api/health`) are registered first, then `app.use("/api", requireAuth)`; admin routers mount after `app.use("/api/users", requireAdmin)`. New public routes must go above the `requireAuth` line
-- Server validation uses zod: define a schema per route and call `parseOrReject` (`server/src/lib/validation.ts`), which sends a 400 with the first issue message
+- Server validation uses zod: define a schema per route (`server/src/schemas`, or `@core` if the client shares it) and call `parseOrReject` (`server/src/lib/validation.ts`), which sends a 400 with the first issue message
 - Express 5: async route handlers need no try/catch; rejections reach the generic error handler
 - Server hardening: `helmet`, CORS limited to `TRUSTED_ORIGINS` (comma-separated, shared via `trustedOrigins` in `auth.ts`), generic 500 error handler, secure cookies in production
 - `auth.ts` throws at startup if `BETTER_AUTH_SECRET` is under 32 chars; passwords must be 12+ chars (`MIN_PASSWORD_LENGTH` from `@core`)
@@ -83,6 +88,7 @@ The client proxies `/api/*` requests to the server via Vite config.
 - Server AI calls use the Vercel AI SDK `generateText` with a plain model string (`openai/gpt-5-nano`), routed through the AI Gateway; needs `AI_GATEWAY_API_KEY` in `server/.env`
 - Reply polish: `POST /api/tickets/:id/replies/polish` (`server/src/controllers/polish.ts`, body validated by `polishSchema` in `@core`) rewrites the draft; client side is the Polish button in `ReplyForm` via `useReplyForm`
 - Ticket summary: `POST /api/tickets/:id/summary` (`server/src/controllers/summary.ts`) summarizes the original message + reply history; nothing is stored, so each call regenerates. Client: `TicketSummary` (Summarize button with sparkles icon, below the Message card) + `useTicketSummary`
+- Ticket classification: `services/classify.ts` uses a pg-boss queue (`lib/queue.ts`, tables in the `pgboss` schema of the app DB). The inbound email controller calls `enqueueClassifyTicket(ticketId)`; the worker (`startClassifyWorker`, started in `index.ts`) loads the ticket, picks a `TICKET_CATEGORIES` value with `Output.choice`, and only fills a still-empty category. Jobs retry 3 times with backoff; enqueue failures are logged, never thrown
 - Prompts treat ticket/reply text as data, not instructions; new AI routes should do the same
 
 ## Frontend conventions
