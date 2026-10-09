@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import * as Sentry from "@sentry/bun";
 import { generateText, Output } from "ai";
 import { z } from "zod";
 import { boss } from "../lib/queue";
@@ -50,8 +51,10 @@ async function resolveTicket(id: string) {
   } catch (err) {
     // Never leave a ticket stuck in processing: humans take over
     console.error(`Failed to auto-resolve ticket ${id}:`, err);
+    Sentry.captureException(err, { extra: { ticketId: id } });
     await ticketRepository.reopenProcessingTicket(id, aiAgentId).catch((e) => {
       console.error(`Failed to reopen ticket ${id}:`, e);
+      Sentry.captureException(e, { extra: { ticketId: id } });
     });
   }
 }
@@ -68,5 +71,6 @@ export async function startResolveWorker() {
 export function enqueueResolveTicket(ticketId: string) {
   boss.send(RESOLVE_QUEUE, { ticketId }).catch((err) => {
     console.error(`Failed to enqueue auto-resolve for ticket ${ticketId}:`, err);
+    Sentry.captureException(err, { extra: { ticketId } });
   });
 }

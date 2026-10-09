@@ -1,3 +1,5 @@
+import "./instrument";
+import * as Sentry from "@sentry/bun";
 import { toNodeHandler } from "better-auth/node";
 import cors from "cors";
 import express from "express";
@@ -36,6 +38,7 @@ app.get("/api/health", async (_req, res) => {
     res.json({ status: "ok", database: "connected" });
   } catch (err) {
     console.error("Database health check failed:", err);
+    Sentry.captureException(err);
     res.status(503).json({ status: "error", database: "unreachable" });
   }
 });
@@ -51,6 +54,8 @@ app.use("/api/users", usersRouter);
 app.use("/api/stats", statsRouter);
 app.use("/api/tickets", ticketsRouter);
 
+// After all routes, before our handler; reports 5xx errors only
+Sentry.setupExpressErrorHandler(app);
 app.use(errorHandler);
 
 const server = app.listen(port, () => {
@@ -64,6 +69,7 @@ await startResolveWorker();
 async function shutdown() {
   server.close();
   await boss.stop();
+  await Sentry.close(2000);
   process.exit(0);
 }
 process.on("SIGINT", shutdown);

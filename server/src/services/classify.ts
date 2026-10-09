@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/bun";
 import { generateText, Output } from "ai";
 import { TICKET_CATEGORIES } from "@core";
 import { boss } from "../lib/queue";
@@ -33,7 +34,12 @@ export async function startClassifyWorker() {
   await boss.createQueue(CLASSIFY_QUEUE);
   await boss.work<{ ticketId: string }>(CLASSIFY_QUEUE, async (jobs) => {
     // A throw makes pg-boss retry the job (see retry options in enqueueClassifyTicket)
-    for (const job of jobs) await classifyTicket(job.data.ticketId);
+    for (const job of jobs) {
+      await classifyTicket(job.data.ticketId).catch((err) => {
+        Sentry.captureException(err, { extra: { ticketId: job.data.ticketId } });
+        throw err;
+      });
+    }
   });
 }
 
@@ -43,5 +49,6 @@ export function enqueueClassifyTicket(ticketId: string) {
     .send(CLASSIFY_QUEUE, { ticketId }, { retryLimit: 3, retryDelay: 30, retryBackoff: true })
     .catch((err) => {
       console.error(`Failed to enqueue classification for ticket ${ticketId}:`, err);
+      Sentry.captureException(err, { extra: { ticketId } });
     });
 }
