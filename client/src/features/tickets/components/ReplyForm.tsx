@@ -4,11 +4,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { useReplyForm } from "../hooks/useReplyForm";
 
 export function ReplyForm({ ticketId }: { ticketId: string }) {
-  const { form, onSubmit } = useReplyForm(ticketId);
+  const { form, onSubmit, onPolish, isPolishing } = useReplyForm(ticketId);
   const {
     register,
+    watch,
     formState: { errors, isSubmitting },
   } = form;
+  const isEmpty = !watch("body").trim();
 
   return (
     <form onSubmit={onSubmit} noValidate className="space-y-3">
@@ -24,9 +26,14 @@ export function ReplyForm({ ticketId }: { ticketId: string }) {
         <FieldError errors={[errors.body]} />
       </Field>
       <FieldError errors={[errors.root]} />
-      <Button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "Sending..." : "Send reply"}
-      </Button>
+      <div className="flex gap-2">
+        <Button type="button" variant="outline" onClick={onPolish} disabled={isEmpty || isPolishing || isSubmitting}>
+          {isPolishing ? "Polishing..." : "Polish"}
+        </Button>
+        <Button type="submit" disabled={isEmpty || isSubmitting || isPolishing}>
+          {isSubmitting ? "Sending..." : "Send reply"}
+        </Button>
+      </div>
     </form>
   );
 }

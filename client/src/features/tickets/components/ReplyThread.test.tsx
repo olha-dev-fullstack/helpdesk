@@ -49,11 +49,20 @@ describe("ReplyThread", () => {
     expect(await screen.findByText("No replies yet.")).toBeInTheDocument();
   });
 
-  it("rejects a blank reply without calling the API", async () => {
+  it("disables Polish and Send reply while the reply is blank", async () => {
     vi.mocked(axios.get).mockResolvedValue({ data: { replies: [] } });
     renderThread();
-    await userEvent.click(await screen.findByRole("button", { name: "Send reply" }));
-    expect(await screen.findByText("Reply is required")).toBeInTheDocument();
+    const box = await screen.findByLabelText("Reply");
+    const send = screen.getByRole("button", { name: "Send reply" });
+    const polish = screen.getByRole("button", { name: "Polish" });
+    expect(send).toBeDisabled();
+    expect(polish).toBeDisabled();
+    await userEvent.type(box, "   ");
+    expect(send).toBeDisabled();
+    expect(polish).toBeDisabled();
+    await userEvent.type(box, "Hi");
+    expect(send).toBeEnabled();
+    expect(polish).toBeEnabled();
     expect(axios.post).not.toHaveBeenCalled();
   });
 

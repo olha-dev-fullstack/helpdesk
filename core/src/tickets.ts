@@ -22,6 +22,15 @@ export const replySchema = z.object({
     .max(MAX_REPLY_LENGTH, `Reply must be at most ${MAX_REPLY_LENGTH} characters`),
 });
 
+// Draft sent to the AI polish endpoint; same limits as a reply
+export const polishSchema = z.object({
+  body: z
+    .string("Write a draft to polish")
+    .trim()
+    .min(1, "Write a draft to polish")
+    .max(MAX_REPLY_LENGTH, `Draft must be at most ${MAX_REPLY_LENGTH} characters`),
+});
+
 // Any subset of these fields; `null` clears the category or the assignee
 export const ticketUpdateSchema = z
   .object({

@@ -1,7 +1,7 @@
-import express, { type ErrorRequestHandler } from "express";
-import cors from "cors";
-import helmet from "helmet";
 import { toNodeHandler } from "better-auth/node";
+import cors from "cors";
+import express from "express";
+import helmet from "helmet";
 import { auth, trustedOrigins } from "./lib/auth";
 import { prisma } from "./lib/prisma";
 import { requireAdmin } from "./middlewares/require-admin";
@@ -9,6 +9,7 @@ import { requireAuth } from "./middlewares/require-auth";
 import { inboundEmailRouter } from "./routes/inbound-email";
 import { ticketsRouter } from "./routes/tickets";
 import { usersRouter } from "./routes/users";
+import { errorHandler } from "./lib/errorHandler";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -45,20 +46,6 @@ app.use("/api/users", requireAdmin);
 app.use("/api/users", usersRouter);
 app.use("/api/tickets", ticketsRouter);
 
-// Generic handler so errors never leak stack traces to clients
-const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
-  // Client mistakes from body-parser are not server errors
-  if (err.type === "entity.parse.failed") {
-    res.status(400).json({ error: "Invalid JSON body" });
-    return;
-  }
-  if (err.type === "entity.too.large") {
-    res.status(413).json({ error: "Request body too large" });
-    return;
-  }
-  console.error(err);
-  res.status(500).json({ error: "Internal server error" });
-};
 app.use(errorHandler);
 
 app.listen(port, () => {

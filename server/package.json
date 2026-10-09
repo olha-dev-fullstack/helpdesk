@@ -23,6 +23,7 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
+    "ai": "^7.0.134",
     "better-auth": "^1.7.7",
     "cors": "^2.8.6",
     "dotenv": "^18.0.5",

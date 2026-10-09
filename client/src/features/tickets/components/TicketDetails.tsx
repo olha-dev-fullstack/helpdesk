@@ -3,6 +3,7 @@ import { Card,CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { TicketDetails as TicketDetailsData } from "../types";
 import { AssigneeSelect } from "./AssigneeSelect";
 import { ReplyThread } from "./ReplyThread";
+import { TicketSummary } from "./TicketSummary";
 import { TicketCategoryBadge } from "./TicketCategoryBadge";
 import { TicketCategorySelect } from "./TicketCategorySelect";
 import { TicketStatusBadge } from "./TicketStatusBadge";
@@ -47,6 +48,7 @@ export function TicketDetails({ ticket }: { ticket: TicketDetailsData }) {
             />
           </CardContent>
         </Card>
+        <TicketSummary ticketId={ticket.id} />
         <ReplyThread ticketId={ticket.id} />
       </div>
       <Card className="self-start">

@@ -43,6 +43,14 @@ The client proxies `/api/*` requests to the server via Vite config.
 - `core` has its own `package.json` (zod); run `bun install` in `core/` after cloning
 - Server-only schemas (ticket list query, inbound email) and client-only ones (login) stay in their own app
 
+## Server layout
+
+- `server/src/routes` only wires paths to controller functions; one file per resource (`tickets`, `replies`, `polish`, `summary`, `users`, `inbound-email`)
+- `controllers`: parse input (`parseOrReject`), run all checks (404s, role, uniqueness, secrets), call repositories/services, send the response
+- `services`: business logic with no `req`/`res` (AI calls, password hashing, list query building)
+- `repositories`: the only place that touches `prisma`; they map Prisma error codes to `null`/string results
+- `schemas`: server-only zod schemas; schemas shared with the client stay in `@core`
+
 ## Database (server)
 
 - Copy `server/.env.example` to `server/.env` (`DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` (min 12 chars))
@@ -70,6 +78,13 @@ The client proxies `/api/*` requests to the server via Vite config.
 - Rate limiting covers `/api/auth/*` only (Better Auth, in-memory, sign-in 5/min); disable with `RATE_LIMIT_ENABLED=false` (e2e does)
 - Security review: use the `security-reviewer` subagent (`.claude/agents/security-reviewer.md`); still open: rate limit for non-auth routes, max lengths on user input (zod + `express.json` limit), revoke sessions on email change
 
+## AI features
+
+- Server AI calls use the Vercel AI SDK `generateText` with a plain model string (`openai/gpt-5-nano`), routed through the AI Gateway; needs `AI_GATEWAY_API_KEY` in `server/.env`
+- Reply polish: `POST /api/tickets/:id/replies/polish` (`server/src/controllers/polish.ts`, body validated by `polishSchema` in `@core`) rewrites the draft; client side is the Polish button in `ReplyForm` via `useReplyForm`
+- Ticket summary: `POST /api/tickets/:id/summary` (`server/src/controllers/summary.ts`) summarizes the original message + reply history; nothing is stored, so each call regenerates. Client: `TicketSummary` (Summarize button with sparkles icon, below the Message card) + `useTicketSummary`
+- Prompts treat ticket/reply text as data, not instructions; new AI routes should do the same
+
 ## Frontend conventions
 
 - Import with the `@/` alias (maps to `client/src`)
@@ -80,7 +95,7 @@ The client proxies `/api/*` requests to the server via Vite config.
 - Review any component over 300 lines and split it (hook + sub-components)
 - Data fetching: use axios for HTTP requests and TanStack Query (`@tanstack/react-query`) for server state (`useQuery`/`useMutation`); no raw `fetch` + `useEffect`. `QueryClientProvider` is set up in `client/src/main.tsx`
 - Use `Skeleton` (`@/components/ui/skeleton`) for loading states, not "Loading..." text
-- Admin user list: `GET /api/users` (`server/src/routes/users.ts`) feeds `client/src/pages/UsersPage.tsx`; `POST /api/users` (admin-only, always creates role `agent`, writes user + credential account via Prisma like the seed since `disableSignUp` blocks Better Auth sign-up) feeds `UserFormDialog` (create + edit); `PATCH /api/users/:id` (blank password = unchanged; a password change deletes that user's sessions) and `DELETE /api/users/:id` (rejects deleting yourself; sessions/accounts cascade) feed the row actions and `DeleteUserDialog`
+- Admin user list: `GET /api/users` (`server/src/controllers/users.ts`) feeds `client/src/pages/UsersPage.tsx`; `POST /api/users` (admin-only, always creates role `agent`, writes user + credential account via Prisma like the seed since `disableSignUp` blocks Better Auth sign-up) feeds `UserFormDialog` (create + edit); `PATCH /api/users/:id` (blank password = unchanged; a password change deletes that user's sessions) and `DELETE /api/users/:id` (rejects deleting yourself; sessions/accounts cascade) feed the row actions and `DeleteUserDialog`
 
 ## Component tests (Vitest)
 

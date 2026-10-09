@@ -3,7 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { getErrorMessage } from "@/lib/get-error-message";
-import { createReply } from "../api";
+import { createReply, polishReply } from "../api";
 import { REPLIES_QUERY_KEY } from "../constants";
 import type { ReplyFormValues } from "../types";
 
@@ -20,6 +20,21 @@ export function useReplyForm(ticketId: string) {
       queryClient.invalidateQueries({ queryKey: [REPLIES_QUERY_KEY, ticketId] }),
   });
 
+  const polishMutation = useMutation({
+    mutationFn: (body: string) => polishReply(ticketId, body),
+  });
+
+  const onPolish = async () => {
+    form.clearErrors();
+    const body = form.getValues("body");
+    try {
+      const polished = await polishMutation.mutateAsync(body);
+      form.setValue("body", polished, { shouldDirty: true });
+    } catch (err) {
+      form.setError("root", { message: getErrorMessage(err, "Failed to polish reply") });
+    }
+  };
+
   const onSubmit = form.handleSubmit(async (values) => {
     try {
       await mutation.mutateAsync(values);
@@ -30,5 +45,5 @@ export function useReplyForm(ticketId: string) {
     form.reset();
   });
 
-  return { form, onSubmit };
+  return { form, onSubmit, onPolish, isPolishing: polishMutation.isPending };
 }

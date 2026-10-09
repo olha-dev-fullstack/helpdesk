@@ -52,3 +52,13 @@ export async function createReply(ticketId: string, body: string): Promise<Reply
   const { data } = await axios.post<{ reply: Reply }>(`/api/tickets/${ticketId}/replies`, { body });
   return data.reply;
 }
+
+export async function polishReply(ticketId: string, body: string): Promise<string> {
+  const { data } = await axios.post<{ body: string }>(`/api/tickets/${ticketId}/replies/polish`, { body });
+  return data.body;
+}
+
+export async function summarizeTicket(ticketId: string): Promise<string> {
+  const { data } = await axios.post<{ summary: string }>(`/api/tickets/${ticketId}/summary`);
+  return data.summary;
+}
