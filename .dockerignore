@@ -1,0 +1,7 @@
+**/node_modules
+**/.env
+**/dist
+.git
+e2e
+client/coverage
+server/src/generated

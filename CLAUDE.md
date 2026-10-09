@@ -94,6 +94,12 @@ Request flow: `routes` -> `controllers` -> `services` -> `repositories` -> Prism
 - Dashboard: `GET /api/stats` (`controllers/stats.ts` -> `repositories/stats.ts` -> the `dashboard_stats(chart_days)` Postgres function, created by a hand-written migration, so changing the stats means a new migration that `CREATE OR REPLACE`s it) feeds `features/dashboard` on `HomePage` (total, open, resolved by AI count/%, average resolution time, plus `ticketsPerDay`: zero-filled UTC counts for the last 30 days, shown as a recharts bar chart via shadcn `chart`). "Resolved by AI" = resolved/closed ticket with an author-less agent reply; resolution time uses `Ticket.resolvedAt`, stamped on first resolve/close and cleared when reopened (`updateTicket`, `resolveProcessingTicket`)
 - Prompts treat ticket/reply text as data, not instructions; new AI routes should do the same
 
+## Deployment (Railway)
+
+- One service from the root `Dockerfile` (builds `client/dist`, runs the server, which serves the client and an SPA fallback when `NODE_ENV=production`); `railway.json` runs `prisma migrate deploy` as the pre-deploy command and health-checks `/api/health`
+- Add the Railway PostgreSQL plugin; service variables: `DATABASE_URL` (`${{Postgres.DATABASE_URL}}`), `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` and `TRUSTED_ORIGINS` (both the public `https://` URL), `INBOUND_EMAIL_SECRET`, `AI_GATEWAY_API_KEY`, `SENTRY_DSN`, `VITE_SENTRY_DSN` (build-time, declared as an `ARG` in the Dockerfile), `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD`
+- One-off after first deploy: `railway run --service <svc> bun run db:seed` and `db:seed:ai-agent` from `server/` (use the public DB URL when running locally)
+
 ## Error logging (Sentry)
 
 - Server: `server/src/instrument.ts` (`@sentry/bun`, imported first in `index.ts`) reads `SENTRY_DSN`; `Sentry.setupExpressErrorHandler(app)` sits right before `errorHandler` and reports 5xx only. Errors that are caught and logged (health check, pg-boss, classify/resolve workers and enqueue) call `Sentry.captureException` next to `console.error`; do the same for new swallowed errors

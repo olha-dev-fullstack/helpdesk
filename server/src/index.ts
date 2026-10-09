@@ -3,6 +3,7 @@ import * as Sentry from "@sentry/bun";
 import { toNodeHandler } from "better-auth/node";
 import cors from "cors";
 import express from "express";
+import path from "node:path";
 import helmet from "helmet";
 import { auth, trustedOrigins } from "./lib/auth";
 import { prisma } from "./lib/prisma";
@@ -20,7 +21,16 @@ import { errorHandler } from "./lib/errorHandler";
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        // Browser Sentry reports to the ingest host
+        "connect-src": ["'self'", "https://*.ingest.sentry.io", "https://*.ingest.us.sentry.io", "https://*.ingest.de.sentry.io"],
+      },
+    },
+  }),
+);
 app.use(cors({ origin: trustedOrigins, credentials: true }));
 // Better Auth must be mounted before express.json()
 app.all("/api/auth/*splat", toNodeHandler(auth));
@@ -53,6 +63,15 @@ app.use("/api/users", requireAdmin);
 app.use("/api/users", usersRouter);
 app.use("/api/stats", statsRouter);
 app.use("/api/tickets", ticketsRouter);
+
+// Production: serve the built client (single deployable); unknown non-API GETs get the SPA
+if (process.env.NODE_ENV === "production") {
+  const clientDist = path.resolve(import.meta.dir, "../../client/dist");
+  app.use(express.static(clientDist));
+  app.get(/^\/(?!api\/).*/, (_req, res) => {
+    res.sendFile(path.join(clientDist, "index.html"));
+  });
+}
 
 // After all routes, before our handler; reports 5xx errors only
 Sentry.setupExpressErrorHandler(app);
